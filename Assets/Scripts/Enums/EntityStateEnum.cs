@@ -3,8 +3,6 @@ using UnityEngine;
 
 
 //Add all entity states here.
-//If its a state specific to an entity prefix it with entity type 
-//IE BOSSNAME_SPECIAL_ATTACK,
 public enum EntityStateEnum
 {
     IDLE,
@@ -22,7 +20,7 @@ public enum EntityStateEnum
     LEDGE_CLIMB,//NOT IMPLEMENTED.
 
     GROUND_SLAM,//NOT IMPLEMENTED. Same as falling, Higher gravity less horizontal movement speed?
-    GROUND_SLAM_EXIT,//NOT IMPLEMENTED. Triggers after Ground_slam lands.Used to check for superjump input.
+    GROUND_SLAM_EXIT,//NOT IMPLEMENTED. Triggers after Ground_slam lands.Used to check for superjump input. And do damage / effects.
 
     WALL_HANG,//NOT IMPLEMENTED. Hanging in place on wall (Not ledge)
     WALL_RUN, //NOT IMPLEMENTED. Running up a wall

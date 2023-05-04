@@ -1,19 +1,19 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class EntityStateMachine
+public class StateMachine<T>
 {
-    private Dictionary<int, Func<BaseEntityController, bool>> _states = new();
-    private Func<BaseEntityController, bool> _activeState;
+    private Dictionary<int, Func<T, bool>> _states = new();
+    private Func<T, bool> _activeState;
 
     public int CurrentState { get; private set; }
     public int LastState { get; private set; }
-    public float CurrentStateTime { get;private set; }
-    public float LastStateTime { get;private set; }
+    public float CurrentStateTime { get; private set; }
+    public float LastStateTime { get; private set; }
 
-    public void UpdateMachine(BaseEntityController entity)
+    public void UpdateMachine(T arg)
     {
         CurrentStateTime += Time.deltaTime;
 
@@ -22,15 +22,13 @@ public class EntityStateMachine
 #if DEBUG
         byte maxloopcount = 0;
 #endif
-        while (!_activeState(entity))
+        while (!_activeState(arg))
         {
 #if DEBUG
             maxloopcount++;
-            if(maxloopcount == 100)
+            if (maxloopcount == 100)
             {
-                Debug.LogError($"EntityStateMachine.cs \"{entity.name}\" stuck in infinite loop! CurrentState:{CurrentState}");
-                SetState(0); //Attempt to change state to prevent constant infinite looping.
-                break;
+                throw new Exception("EntityMachine.cs Max loop limit reached!");
             }
 #endif
         }
@@ -50,7 +48,7 @@ public class EntityStateMachine
     /// <param name="state">Id of the state.</param>
     /// <param name="fun">Function to use.</param>
     /// <returns></returns>
-    public bool RegisterState(int id, Func<BaseEntityController, bool> function, bool replace = false)
+    public bool RegisterState(int id, Func<T, bool> function, bool replace = false)
     {
         if (HasState(id))
         {

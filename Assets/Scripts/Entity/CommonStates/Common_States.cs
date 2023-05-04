@@ -45,6 +45,10 @@ public static class Common_States
         }
         src.Velocity.x = Mathf.MoveTowards(src.Velocity.x, targetspeed, src.Acceleration);
 
+        if ((src.Velocity.x < 0 && src.IsCollision(DirectionEnum.LEFT))
+            || src.Velocity.x > 0 && src.IsCollision(DirectionEnum.RIGHT))
+            src.Velocity.x = 0;
+
         return true;
     }
 

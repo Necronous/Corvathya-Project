@@ -12,6 +12,11 @@ public class PlayerController : BaseEntityController
     /* Reminder to fix Moving in air immediatly lowers velocity if run jumping. 
      */
 
+    public Transform _rightLedgeCheck { get; private set; }
+    public Transform _leftLedgeCheck { get; private set; }
+
+    
+
 
     void Start()
     {
@@ -21,6 +26,9 @@ public class PlayerController : BaseEntityController
         RegisterState((int)EntityStateEnum.JUMP_TAKEOFF, Player_AirStates.Jump_Takeoff);
         RegisterState((int)EntityStateEnum.FALLING, Player_AirStates.Falling);
         SetState((int)EntityStateEnum.IDLE);
+
+        _rightLedgeCheck = transform.Find("Right_Ledge_Check");
+        _leftLedgeCheck = transform.Find("Left_Ledge_Check");
     }
 
     private void OnMove(InputValue val)
@@ -40,15 +48,19 @@ public class PlayerController : BaseEntityController
         UpdateEntity();
     }
 
-    /*
     private void OnGUI()
     {
         //For debugging
         GUILayout.Label("Player state:");
-        GUILayout.Label("CurrentState: " + (PlayerStateEnum)CurrentState);
-        GUILayout.Label($"CurrentStateTime: {CurrentStateTime}ms");
-        GUILayout.Label("LastState: " + (PlayerStateEnum)LastState);
-        GUILayout.Label($"LastStateTime: {LastStateTime}ms");
+        GUILayout.Label("CurrentState: " + (EntityStateEnum)CurrentState);
+        GUILayout.Label($"CurrentStateTime: {CurrentStateTime}s");
+        GUILayout.Label("LastState: " + (EntityStateEnum)LastState);
+        GUILayout.Label($"LastStateTime: {LastStateTime}s");
+        GUILayout.Label($"--");
+        GUILayout.Label($"CollisionUp: {IsCollision(DirectionEnum.UP)}");
+        GUILayout.Label($"CollisionRight: {IsCollision(DirectionEnum.RIGHT)}");
+        GUILayout.Label($"CollisionDown: {IsCollision(DirectionEnum.DOWN)}");
+        GUILayout.Label($"CollisionLeft: {IsCollision(DirectionEnum.LEFT)}");
     }
-    */
+    
 }
