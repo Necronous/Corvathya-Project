@@ -65,8 +65,8 @@ public static class Player_GroundStates
         }
         player.Velocity.x = Mathf.MoveTowards(player.Velocity.x, targetspeed, player.Acceleration);
 
-        if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT) && !player.CanMoveCollider(DirectionEnum.LEFT))
-            || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT) && !player.CanMoveCollider(DirectionEnum.RIGHT))
+        if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT) && !player.CanBePushed(DirectionEnum.LEFT))
+            || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT) && !player.CanBePushed(DirectionEnum.RIGHT))
             player.Velocity.x = 0;
 
         return true;

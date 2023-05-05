@@ -27,23 +27,18 @@ public abstract class BaseEntityController : MonoBehaviour
     public float MovementMagnitude;
     
     public bool isAttacking;
-    public bool isMovable = true;
+    public bool isPushable = true;
 
-    public bool NearLedgeLeft;// { get; private set; }
+    public bool NearLedgeLeft;// { get; private set; } Get set makes it invisible in the editor.
     public bool NearLedgeRight;// { get; private set; }
 
     public bool OnGround => _collisionList[(int)DirectionEnum.DOWN];
     private bool[] _collisionList;
     private Collider2D[] _colliderList;
 
-    /// <summary>
-    /// Facing direction is scale of the entity root object so the scale must always be -1 or 1;
-    /// Is anyother scaling is needed apply it to a child object.
-    /// A value of 0 Flips the facing direction.
-    /// </summary>
-    public int FacingDirection
+    public float FacingDirection
     {
-        get => (int)Mathf.Clamp(transform.localScale.x, -1, 1);
+        get => Mathf.Clamp(transform.localScale.x, -1, 1);
         set
         {
             if (value > 0)
@@ -51,7 +46,7 @@ public abstract class BaseEntityController : MonoBehaviour
             else if (value < 0)
                 value = -1;
             else
-                value = (int)transform.localScale.x * -1;
+                value = transform.localScale.x * -1;
             transform.localScale = new(value, transform.localScale.y);
         }
     }
@@ -163,12 +158,12 @@ public abstract class BaseEntityController : MonoBehaviour
         return true;
     }
 
-    public bool CanMoveCollider(DirectionEnum dir)
+    public bool CanBePushed(DirectionEnum dir)
     {
         
         Collider2D collision = _colliderList[(int)dir];
         BaseEntityController target = collision.GetComponent<BaseEntityController>();
-        return target != null ? target.isMovable : false;
+        return target != null ? target.isPushable : false;
     }
 
     public bool IsCollision(DirectionEnum dir)
