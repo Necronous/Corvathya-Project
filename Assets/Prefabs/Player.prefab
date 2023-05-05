@@ -119,8 +119,9 @@ MonoBehaviour:
   JumpForce: 15
   GravityForce: 0.9
   MovementMagnitude: 0
+  isAttacking: 0
+  isMovable: 1
   JumpHeld: 0
-  InLedgeCheckRange: 0
 --- !u!50 &3777664628312252984
 Rigidbody2D:
   serializedVersion: 4
@@ -137,7 +138,7 @@ Rigidbody2D:
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 0
-  m_Material: {fileID: 0}
+  m_Material: {fileID: 6200000, guid: 2ac821669c3260746a70ab81b5272965, type: 2}
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0

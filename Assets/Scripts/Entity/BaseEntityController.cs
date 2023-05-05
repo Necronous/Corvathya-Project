@@ -8,7 +8,7 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class BaseEntityController : MonoBehaviour
 {
-    
+
 
     protected StateMachine<BaseEntityController> _stateMachine;
     protected Rigidbody2D _rigidBody;
@@ -19,11 +19,13 @@ public abstract class BaseEntityController : MonoBehaviour
     public float MaxSpeed = 10f;
     public float Acceleration = .5f;
     public float Deceleration = .5f;
-    
+
     public float JumpForce = 15f;
     public float GravityForce = .9f;
 
     public float MovementMagnitude;
+    public bool isAttacking;
+    public bool isMovable = true;
 
     public bool OnGround => _collisionList[(int)DirectionEnum.DOWN];
     private bool[] _collisionList;
@@ -51,20 +53,20 @@ public abstract class BaseEntityController : MonoBehaviour
         BoundingBox = GetComponent<BoxCollider2D>();
         _collisionList = new bool[4];
         _colliderList = new Collider2D[4];
-        
+
     }
     protected void UpdateEntity()
     {
         //Update collisions
         ContactPoint2D[] contacts = new ContactPoint2D[8];
         int contactCount = BoundingBox.GetContacts(contacts);
-        for(int i = 0;i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             _collisionList[i] = false;
             _colliderList[i] = null;
         }
 
-        for(int i = 0;i < contactCount; i++)
+        for (int i = 0; i < contactCount; i++)
         {
             Vector3 normal = contacts[i].normal;
             Collider2D collider = contacts[i].collider;
@@ -100,11 +102,19 @@ public abstract class BaseEntityController : MonoBehaviour
         _rigidBody.velocity = Velocity;
     }
 
-    public bool IsCollision(DirectionEnum dir) 
+    public bool CanMoveCollider(DirectionEnum dir)
+    {
+        Collider2D collision = _colliderList[(int)dir];
+        if (collision.GetComponent<BaseEntityController>() == null) return false;
+        return collision.GetComponent<BaseEntityController>().isMovable;
+
+    }
+
+    public bool IsCollision(DirectionEnum dir)
         => _collisionList[(int)dir];
-    public Collider2D GetCollision(DirectionEnum dir) 
+    public Collider2D GetCollision(DirectionEnum dir)
         => IsCollision(dir) ? _colliderList[(int)dir] : null;
 
-    
+
 
 }

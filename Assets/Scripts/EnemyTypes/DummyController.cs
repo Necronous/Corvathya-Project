@@ -23,7 +23,7 @@ public class DummyController : BaseEntityController
     void FixedUpdate()
     {
         //Wait 5 seconds walk in direction, wait 5 seconds walk back.
-        if(CurrentState == (int)EntityStateEnum.IDLE && CurrentStateTime > 5)
+        if (CurrentState == (int)EntityStateEnum.IDLE && CurrentStateTime > 5)
         {
             if (MoveRight)
                 MovementMagnitude = 1;

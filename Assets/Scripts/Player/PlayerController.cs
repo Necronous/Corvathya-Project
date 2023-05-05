@@ -15,7 +15,7 @@ public class PlayerController : BaseEntityController
     public Transform _rightLedgeCheck { get; private set; }
     public Transform _leftLedgeCheck { get; private set; }
 
-    
+
 
 
     void Start()
@@ -48,7 +48,7 @@ public class PlayerController : BaseEntityController
         UpdateEntity();
     }
 
-    private void OnGUI()
+    /*private void OnGUI()
     {
         //For debugging
         GUILayout.Label("Player state:");
@@ -61,6 +61,6 @@ public class PlayerController : BaseEntityController
         GUILayout.Label($"CollisionRight: {IsCollision(DirectionEnum.RIGHT)}");
         GUILayout.Label($"CollisionDown: {IsCollision(DirectionEnum.DOWN)}");
         GUILayout.Label($"CollisionLeft: {IsCollision(DirectionEnum.LEFT)}");
-    }
-    
+    }*/
+
 }

@@ -33,7 +33,15 @@ public static class Common_States
         }
         if (src.Velocity.x == 0 && src.MovementMagnitude == 0)
         {
-            src.SetState((int)EntityStateEnum.IDLE);
+            if (!src.isAttacking)
+            {
+                src.SetState((int)EntityStateEnum.IDLE);
+            }
+            else
+            {
+                src.SetState((int)EntityStateEnum.ATTACK_COOLDOWN);
+                src.isAttacking = false;
+            }
             return false;
         }
         float targetspeed = src.MovementMagnitude * src.MaxSpeed;
@@ -45,8 +53,8 @@ public static class Common_States
         }
         src.Velocity.x = Mathf.MoveTowards(src.Velocity.x, targetspeed, src.Acceleration);
 
-        if ((src.Velocity.x < 0 && src.IsCollision(DirectionEnum.LEFT))
-            || src.Velocity.x > 0 && src.IsCollision(DirectionEnum.RIGHT))
+        if ((src.Velocity.x < 0 && src.IsCollision(DirectionEnum.LEFT) && !src.CanMoveCollider(DirectionEnum.LEFT))
+            || (src.Velocity.x > 0 && src.IsCollision(DirectionEnum.RIGHT) && !src.CanMoveCollider(DirectionEnum.RIGHT)))
             src.Velocity.x = 0;
 
         return true;

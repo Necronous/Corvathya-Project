@@ -13,7 +13,7 @@ public enum EntityStateEnum
     FALLING,
     JUMP_TAKEOFF,
     JUMP_LAND, //NOT IMPLEMENTED.
-    
+
     GLIDING,//NOT IMPLEMENTED.
 
     LEDGE_HANG,//NOT IMPLEMENTED.
@@ -25,4 +25,20 @@ public enum EntityStateEnum
     WALL_HANG,//NOT IMPLEMENTED. Hanging in place on wall (Not ledge)
     WALL_RUN, //NOT IMPLEMENTED. Running up a wall
     WALL_SLIDE, //NOT IMPLEMENTED. Sliding down a wall.
+
+
+    //ATTACK TYPES
+    MELEE_ATTACK,
+    HEAVY_MELEE_ATTACK,
+    FAST_MELEE_ATTACK,
+    STAGGER_MELEE_ATTACK,
+    CHARGE_ATTACK,
+    JUMP_ATTACK,
+    AOE_ATTACK,
+    BACKWARDS_ATTACK,
+    COMBO_ATTACK,
+    RANGED_ATTACK,
+    HEAVY_RANGED_ATTACK,
+    FAST_RANGED_ATTACK,
+    ATTACK_COOLDOWN,
 }

@@ -39,7 +39,7 @@ public static class Player_GroundStates
     public static bool Moving(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;
-        if(!src.OnGround)
+        if (!src.OnGround)
         {
             src.SetState((int)EntityStateEnum.FALLING);
             return false;
@@ -65,8 +65,8 @@ public static class Player_GroundStates
         }
         player.Velocity.x = Mathf.MoveTowards(player.Velocity.x, targetspeed, player.Acceleration);
 
-        if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT))
-            || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT))
+        if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT) && !player.CanMoveCollider(DirectionEnum.LEFT))
+            || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT) && !player.CanMoveCollider(DirectionEnum.RIGHT))
             player.Velocity.x = 0;
 
         return true;
