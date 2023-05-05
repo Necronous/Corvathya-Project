@@ -69,6 +69,9 @@ public static class Player_GroundStates
             || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT) && !player.CanBePushed(DirectionEnum.RIGHT))
             player.Velocity.x = 0;
 
+        if(player.MovementMagnitude != 0)
+            player.FacingDirection = (player.MovementMagnitude);
+
         return true;
     }
 }

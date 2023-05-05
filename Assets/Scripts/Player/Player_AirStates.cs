@@ -39,6 +39,9 @@ public static class Player_AirStates
             if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT))
             || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT))
                 player.Velocity.x = 0;
+
+            if (player.MovementMagnitude != 0)
+                player.FacingDirection = (player.MovementMagnitude);
         }
         if (player.Velocity.y > 0 && player.IsCollision(DirectionEnum.UP))
             player.Velocity.y = 0;

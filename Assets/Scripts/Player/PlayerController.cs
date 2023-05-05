@@ -29,6 +29,9 @@ public class PlayerController : BaseEntityController
 
         _rightLedgeCheck = transform.Find("Right_Ledge_Check");
         _leftLedgeCheck = transform.Find("Left_Ledge_Check");
+
+        //Temp
+        CameraController.Main.SetTarget(transform);
     }
 
     private void OnMove(InputValue val)
