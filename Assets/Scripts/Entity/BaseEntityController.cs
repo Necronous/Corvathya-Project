@@ -1,9 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.Experimental.GraphView;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class BaseEntityController : MonoBehaviour
@@ -15,22 +13,50 @@ public abstract class BaseEntityController : MonoBehaviour
 
     public BoxCollider2D BoundingBox { get; private set; }
 
+
     public Vector2 Velocity;
     public float MaxSpeed = 10f;
     public float Acceleration = .5f;
     public float Deceleration = .5f;
 
+    public float ViewDistance = 8f;
+
     public float JumpForce = 15f;
     public float GravityForce = .9f;
 
     public float MovementMagnitude;
+    
     public bool isAttacking;
     public bool isMovable = true;
+
+    public bool NearLedgeLeft;// { get; private set; }
+    public bool NearLedgeRight;// { get; private set; }
 
     public bool OnGround => _collisionList[(int)DirectionEnum.DOWN];
     private bool[] _collisionList;
     private Collider2D[] _colliderList;
 
+    /// <summary>
+    /// Facing direction is scale of the entity root object so the scale must always be -1 or 1;
+    /// Is anyother scaling is needed apply it to a child object.
+    /// A value of 0 Flips the facing direction.
+    /// </summary>
+    public int FacingDirection
+    {
+        get => (int)Mathf.Clamp(transform.localScale.x, -1, 1);
+        set
+        {
+            if (value > 0)
+                value = 1;
+            else if (value < 0)
+                value = -1;
+            else
+                value = (int)transform.localScale.x * -1;
+            transform.localScale = new(value, transform.localScale.y);
+        }
+    }
+    
+    
     #region StateMachinePassThrough
     public int CurrentState => _stateMachine.CurrentState;
     public int LastState => _stateMachine.LastState;
@@ -98,16 +124,51 @@ public abstract class BaseEntityController : MonoBehaviour
             }
         }
 
+        //Check for ledges
+        float xDistanceFromOrigin = (BoundingBox.size.x / 2) + .2f;
+        float distanceToCheck = (BoundingBox.size.y / 2) + 0.4f;
+
+        Vector2 leftCheck = new Vector2(transform.position.x - xDistanceFromOrigin, transform.position.y);
+        Vector2 rightCheck = new Vector2(transform.position.x + xDistanceFromOrigin, transform.position.y);
+
+        NearLedgeLeft = Physics2D.Linecast(leftCheck, leftCheck - ( Vector2.up * distanceToCheck));
+        NearLedgeRight = Physics2D.Linecast(rightCheck, rightCheck - ( Vector2.up * distanceToCheck));
+
         _stateMachine.UpdateMachine(this);
         _rigidBody.velocity = Velocity;
     }
 
+    /// <summary>
+    /// Check if an object is in view of the entity
+    /// based view distance.
+    /// </summary>
+    /// <param name="obj">Object to look for</param>
+    /// <returns>True if in view, else false.</returns>
+    public bool InView(GameObject obj) => InView(obj, out float dist);
+    
+    /// <summary>
+    /// Check if an object is in view of the entity
+    /// based on view distance.
+    /// </summary>
+    /// <param name="obj">Object to look for.</param>
+    /// <param name="distance">Distance of target if in view.</param>
+    /// <returns>True if in view, else false.</returns>
+    public bool InView(GameObject obj, out float distance)
+    {
+        distance = Vector3.Distance(obj.transform.position, transform.position);
+        if (distance > ViewDistance 
+            || (distance < 0 && FacingDirection == 1)
+            || (distance > 0 && FacingDirection == -1))
+            return false;
+        return true;
+    }
+
     public bool CanMoveCollider(DirectionEnum dir)
     {
+        
         Collider2D collision = _colliderList[(int)dir];
-        if (collision.GetComponent<BaseEntityController>() == null) return false;
-        return collision.GetComponent<BaseEntityController>().isMovable;
-
+        BaseEntityController target = collision.GetComponent<BaseEntityController>();
+        return target != null ? target.isMovable : false;
     }
 
     public bool IsCollision(DirectionEnum dir)
