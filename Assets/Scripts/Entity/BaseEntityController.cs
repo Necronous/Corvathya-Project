@@ -1,7 +1,13 @@
+
+
+#define DEBUG_ENTITY_CONTROLLER
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
+
 
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class BaseEntityController : MonoBehaviour
@@ -35,6 +41,8 @@ public abstract class BaseEntityController : MonoBehaviour
     public bool OnGround => _collisionList[(int)DirectionEnum.DOWN];
     private bool[] _collisionList;
     private Collider2D[] _colliderList;
+
+    private List<MapArea> _areaModifiers = new();
 
     public float FacingDirection
     {
@@ -76,6 +84,7 @@ public abstract class BaseEntityController : MonoBehaviour
         _colliderList = new Collider2D[4];
 
     }
+
     protected void UpdateEntity()
     {
         //Update collisions
@@ -120,8 +129,10 @@ public abstract class BaseEntityController : MonoBehaviour
         }
 
         //Check for ledges
-        float xDistanceFromOrigin = (BoundingBox.size.x / 2) + .2f;
-        float distanceToCheck = (BoundingBox.size.y / 2) + 0.4f;
+        
+        float xDistanceFromOrigin = BoundingBox.size.x / 2 + .2f;
+        float distanceToCheck = 0.2f;   
+        //alter the distance based on velocity? 
 
         Vector2 leftCheck = new Vector2(transform.position.x - xDistanceFromOrigin, transform.position.y);
         Vector2 rightCheck = new Vector2(transform.position.x + xDistanceFromOrigin, transform.position.y);
@@ -129,8 +140,27 @@ public abstract class BaseEntityController : MonoBehaviour
         NearLedgeLeft = Physics2D.Linecast(leftCheck, leftCheck - ( Vector2.up * distanceToCheck));
         NearLedgeRight = Physics2D.Linecast(rightCheck, rightCheck - ( Vector2.up * distanceToCheck));
 
+#if DEBUG_ENTITY_CONTROLLER
+        Debug.DrawLine(leftCheck, leftCheck - (Vector2.up * distanceToCheck));
+        Debug.DrawLine(rightCheck, rightCheck - (Vector2.up * distanceToCheck));
+#endif
         _stateMachine.UpdateMachine(this);
         _rigidBody.velocity = Velocity;
+    }
+
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        MapArea area = collision.GetComponent<MapArea>();
+        if (area != null)
+            _areaModifiers.Add(area);
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        MapArea area = collision.GetComponent<MapArea>();
+        if (area != null)
+            _areaModifiers.Remove(area);
     }
 
     /// <summary>
@@ -172,5 +202,11 @@ public abstract class BaseEntityController : MonoBehaviour
         => IsCollision(dir) ? _colliderList[(int)dir] : null;
 
 
-
+    public bool HasAreaModifier(AreaModifierEnum mod)
+    {
+        foreach(MapArea area in _areaModifiers)
+            if(area.HasModifier(mod))
+                return true;
+        return false;
+    }
 }
