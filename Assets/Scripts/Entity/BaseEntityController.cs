@@ -1,6 +1,6 @@
 
 
-#define DEBUG_ENTITY_CONTROLLER
+//#define DEBUG_ENTITY_CONTROLLER
 
 using System;
 using System.Collections;
@@ -77,6 +77,9 @@ public abstract class BaseEntityController : MonoBehaviour
 
     protected void InitializeEntity()
     {
+        if(GetType() != typeof(PlayerController)) 
+            Map.Instance?.AddNPC(this);
+
         _stateMachine = new();
         _rigidBody = GetComponent<Rigidbody2D>();
         BoundingBox = GetComponent<BoxCollider2D>();
