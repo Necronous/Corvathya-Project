@@ -1,0 +1,57 @@
+
+
+Quick description of the games systems, what they do, how to use them etc.
+These may not be implemented yet or finished.
+
+
+World class (World.cs)
+{
+	-Global script that is not destroyed on load and is always active.
+	-Only one can exist and it can be referenced by a static reference in the class.
+
+	properties:
+	- public static World Instance {get; private set;} //reference to itself, only one world class can exists at once.
+	- public static PlayerController {get; private set;} //static reference to the player, Only one player can exist at one time.
+	- public static Map {get; private set;} //static reference to a mapscript containing all data for the currently loaded map. Only one can exists at once.
+
+	- private dictionary<string, object> _worldVariables; //list of all world variables 
+	- private string _currentMapName;
+
+	functions:
+	- bool MapExists(string mapname) // check if map exists 
+	- void LoadMap(string mapname) // loads a map
+	- void LoadMap(string mapname, string exitID) // loads a map and places the player at the specified exit
+	- string GetCurrentMapName() //Currents name of current map.
+
+	- void CreatePlayer() //Creates the player prefab and stores a static reference in World.cs
+	- void DeletePlayer() //Unloads the player
+
+	- void SaveGame() //Saves the game.
+	- void LoadGame() //loads the game from a file.
+	- void NewGame() //Sets up a new game save file and loads it.
+
+	- void SetWorldVariable(string key, object value) //Overwrites a world variable if it exists otherwise creates a new one.
+	- T GetWorldVariable<T>(string key) //returns a world variable with specified key, Attempts to cast the result to T, will throw exception if variable does not exist.
+	- bool TryGetWorldVariable<T>(string key, out T variable) //Same as above but return false if variable not found.
+}
+Map class (Map.cs)
+{
+	- Script that everymap must contain to be valid.
+	- Hold various information about the map, It is retrieved by World.cs on map load and stored in World.Map.
+
+	Properties:
+	- private List<MapEntrance> _mapEntrances; //List of all the entrances on the map.
+	- private List<BaseEntityController> _npcList; //List of all npcs on the map including friendly and enemy.
+
+	Functions:
+	- MapEntrance GetMapEntranceByName(string name) //Returns a map entrance by its gameobjects name. or null if none exists.
+	- bool MapEntranceExists(string name) //Checks if an entrace exists in the map.
+	- MapEntrance[] GetAllEntrances() //returns an array of all entrances.
+	- void AddMapEntrance(MapEntrance entry) 
+	- void RemoveMapEntrance(MapEntrance entry)
+
+	- void AddNPC(BaseEntityController npc)
+	- void RemoveNPC(BaseEntityController npc)
+
+
+}
