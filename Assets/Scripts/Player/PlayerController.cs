@@ -1,21 +1,32 @@
+
+#define DEBUG_PLAYER_CONTROLLER
+
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 
+
+/*
+ * TODO,
+ * Add ledgecheck cooldown to prevent ledge grabbing right after letting go.
+ * Add a struct to control input states better.
+ * Add enemy check to CheckLedgeClimb, Enemies should not stop player from climbing
+ * Change control for ledge climbing to UP from LEFT/RIGHT
+ */
+
+
+
 public class PlayerController : BaseEntityController
 {
 
+    public byte CurrentJumpCount;
+    public byte MaxJumpCount = 2;
     public bool JumpHeld;
-
-    /* Reminder to fix Moving in air immediatly lowers velocity if run jumping. 
-     */
-
-    public Transform _rightLedgeCheck { get; private set; }
-    public Transform _leftLedgeCheck { get; private set; }
-
-
+    public bool JumpPressed;
+    public bool CrouchHeld;
+    public bool GlideHeld;
 
 
     void Start()
@@ -23,12 +34,14 @@ public class PlayerController : BaseEntityController
         base.InitializeEntity();
         RegisterState((int)EntityStateEnum.IDLE, Player_GroundStates.Idle);
         RegisterState((int)EntityStateEnum.MOVING, Player_GroundStates.Moving);
+        RegisterState((int)EntityStateEnum.CROUCHING, Player_GroundStates.Crouching);
         RegisterState((int)EntityStateEnum.JUMP_TAKEOFF, Player_AirStates.Jump_Takeoff);
         RegisterState((int)EntityStateEnum.FALLING, Player_AirStates.Falling);
+        RegisterState((int)EntityStateEnum.AIR_LAND, Player_AirStates.Air_Land);
+        RegisterState((int)EntityStateEnum.GLIDING, Player_AirStates.Glide);
+        RegisterState((int)EntityStateEnum.LEDGE_HANG, Player_AirStates.LedgeHang);
+        RegisterState((int)EntityStateEnum.LEDGE_CLIMB, Player_AirStates.LedgeClimb);
         SetState((int)EntityStateEnum.IDLE);
-
-        _rightLedgeCheck = transform.Find("Right_Ledge_Check");
-        _leftLedgeCheck = transform.Find("Left_Ledge_Check");
 
         //Temp
         CameraController.Main.SetTarget(transform);
@@ -40,10 +53,24 @@ public class PlayerController : BaseEntityController
     }
     private void OnJump(InputValue val)
     {
-        if (JumpHeld && !val.isPressed)
+        if ((JumpHeld || JumpPressed) && !val.isPressed)
             JumpHeld = false;
         else
-            JumpHeld = true;
+            JumpPressed = JumpHeld = true;
+    }
+    private void OnCrouch(InputValue val)
+    {
+        if (CrouchHeld && !val.isPressed)
+            CrouchHeld = false;
+        else
+            CrouchHeld = true;
+    }
+    private void OnGlide(InputValue val)
+    {
+        if (!val.isPressed)
+            GlideHeld = false;
+        else
+            GlideHeld = true;
     }
 
     void FixedUpdate()
@@ -51,7 +78,8 @@ public class PlayerController : BaseEntityController
         UpdateEntity();
     }
 
-    /*private void OnGUI()
+#if DEBUG_PLAYER_CONTROLLER
+    private void OnGUI()
     {
         //For debugging
         GUILayout.Label("Player state:");
@@ -64,6 +92,7 @@ public class PlayerController : BaseEntityController
         GUILayout.Label($"CollisionRight: {IsCollision(DirectionEnum.RIGHT)}");
         GUILayout.Label($"CollisionDown: {IsCollision(DirectionEnum.DOWN)}");
         GUILayout.Label($"CollisionLeft: {IsCollision(DirectionEnum.LEFT)}");
-    }*/
+    }
 
+#endif
 }

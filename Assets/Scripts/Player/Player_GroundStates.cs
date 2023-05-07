@@ -4,6 +4,25 @@ using UnityEngine;
 
 public static class Player_GroundStates
 {
+    private static bool CheckCommonGroundCancels(PlayerController player)
+    {
+        if (player.JumpPressed)
+        {
+            player.SetState((int)EntityStateEnum.JUMP_TAKEOFF);
+            return true;
+        }
+        if (!player.OnGround)
+        {
+            player.SetState((int)EntityStateEnum.FALLING);
+            return true;
+        }
+        if (player.CrouchHeld)
+        {
+            player.SetState((int)EntityStateEnum.CROUCHING);
+            return true;
+        }
+        return false;
+    }
     //A state must have only one parameter of BaseEntityController
     //which is the entity that the machine belongs to.
 
@@ -15,16 +34,9 @@ public static class Player_GroundStates
     public static bool Idle(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;
-        if (!src.OnGround)
-        {
-            src.SetState((int)EntityStateEnum.FALLING);
+
+        if (CheckCommonGroundCancels(player))
             return false;
-        }
-        if (player.JumpHeld)
-        {
-            src.SetState((int)EntityStateEnum.JUMP_TAKEOFF);
-            return false;
-        }
 
         if (player.MovementMagnitude != 0 || player.Velocity.x != 0)
         {
@@ -39,16 +51,9 @@ public static class Player_GroundStates
     public static bool Moving(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;
-        if (!src.OnGround)
-        {
-            src.SetState((int)EntityStateEnum.FALLING);
+
+        if (CheckCommonGroundCancels(player))
             return false;
-        }
-        if (player.JumpHeld)
-        {
-            src.SetState((int)EntityStateEnum.JUMP_TAKEOFF);
-            return false;
-        }
 
         if (player.Velocity.x == 0 && player.MovementMagnitude == 0)
         {
@@ -59,11 +64,9 @@ public static class Player_GroundStates
         float targetspeed = player.MovementMagnitude * player.MaxSpeed;
 
         if (Mathf.Abs(targetspeed) < Mathf.Abs(player.Velocity.x))
-        {
             player.Velocity.x = Mathf.MoveTowards(player.Velocity.x, targetspeed, player.Deceleration);
-            return true;
-        }
-        player.Velocity.x = Mathf.MoveTowards(player.Velocity.x, targetspeed, player.Acceleration);
+        else
+            player.Velocity.x = Mathf.MoveTowards(player.Velocity.x, targetspeed, player.Acceleration);
 
         if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT) && !player.CanBePushed(DirectionEnum.LEFT))
             || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT) && !player.CanBePushed(DirectionEnum.RIGHT))
@@ -71,6 +74,33 @@ public static class Player_GroundStates
 
         if(player.MovementMagnitude != 0)
             player.FacingDirection = (player.MovementMagnitude);
+
+        return true;
+    }
+
+    public static bool Crouching(BaseEntityController src)
+    {
+        PlayerController player = src as PlayerController;
+        if(!player.CrouchHeld)
+        {
+            player.SetState((int)EntityStateEnum.IDLE);
+            return false;
+        }
+        if (!player.OnGround)
+        {
+            player.SetState((int)EntityStateEnum.FALLING);
+            return true;
+        }
+
+        if (player.Velocity.x != 0)
+        {
+            player.Velocity.x = Mathf.MoveTowards(player.Velocity.x, 0, player.Deceleration / .8f);
+            return true;
+        }
+
+        if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT) && !player.CanBePushed(DirectionEnum.LEFT))
+            || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT) && !player.CanBePushed(DirectionEnum.RIGHT))
+            player.Velocity.x = 0;
 
         return true;
     }

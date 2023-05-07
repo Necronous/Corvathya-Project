@@ -9,15 +9,17 @@ public enum EntityStateEnum
     MOVING,
     DASHING,//NOT IMPLEMENTED
     HARD_TURN, //NOT IMPLEMENTED, When entity turns around while velocity is high.
+    CROUCHING,
 
     FALLING,
     JUMP_TAKEOFF,
-    JUMP_LAND, //NOT IMPLEMENTED.
+    AIR_LAND,
 
-    GLIDING,//NOT IMPLEMENTED.
+    GLIDING,
+    //Glide land state?
 
-    LEDGE_HANG,//NOT IMPLEMENTED.
-    LEDGE_CLIMB,//NOT IMPLEMENTED.
+    LEDGE_HANG,
+    LEDGE_CLIMB,
 
     GROUND_SLAM,//NOT IMPLEMENTED. Same as falling, Higher gravity less horizontal movement speed?
     GROUND_SLAM_EXIT,//NOT IMPLEMENTED. Triggers after Ground_slam lands.Used to check for superjump input. And do damage / effects.

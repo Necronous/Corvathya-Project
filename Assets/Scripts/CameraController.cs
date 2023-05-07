@@ -48,7 +48,7 @@ public class CameraController : MonoBehaviour
         SetState((int)CameraModeEnum.FOLLOW_OBJECT);
     }
 
-    private void FixedUpdate()
+    private void Update()
     {
         _stateMachine.UpdateMachine();
     }

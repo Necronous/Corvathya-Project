@@ -1,5 +1,5 @@
 {
-    "name": "PlayerInput",
+    "name": "MainInput",
     "maps": [
         {
             "name": "Player",
@@ -19,6 +19,24 @@
                     "type": "Value",
                     "id": "cd8b633f-163d-434b-9c66-7c1402af94a2",
                     "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Crouch",
+                    "type": "Value",
+                    "id": "eab5d833-c005-4c89-bdfc-099d9e247970",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Glide",
+                    "type": "Value",
+                    "id": "4f75cedb-4fc4-4852-9841-78b387fb519d",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -66,6 +84,28 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Jump",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "94b726ed-5025-444e-8e1f-2aab230b5806",
+                    "path": "<Keyboard>/s",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Crouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "98e43e10-ea55-421d-9cc7-c7e7b1229eb0",
+                    "path": "<Keyboard>/ctrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "Glide",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
