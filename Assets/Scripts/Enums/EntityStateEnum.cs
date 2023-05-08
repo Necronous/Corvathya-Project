@@ -24,10 +24,10 @@ public enum EntityStateEnum
     GROUND_SLAM,//NOT IMPLEMENTED. Same as falling, Higher gravity less horizontal movement speed?
     GROUND_SLAM_EXIT,//NOT IMPLEMENTED. Triggers after Ground_slam lands.Used to check for superjump input. And do damage / effects.
 
-    WALL_HANG,//NOT IMPLEMENTED. Hanging in place on wall (Not ledge)
-    WALL_RUN, //NOT IMPLEMENTED. Running up a wall
-    WALL_SLIDE, //NOT IMPLEMENTED. Sliding down a wall.
-
+    WALL_HANG,
+    WALL_RUN, 
+    WALL_SLIDE, 
+    WALL_KICK_OFF,
 
     //ATTACK TYPES
     MELEE_ATTACK,

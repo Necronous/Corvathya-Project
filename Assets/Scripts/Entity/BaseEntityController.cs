@@ -8,17 +8,16 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-
+/// <summary>
+/// A base class for Entities.
+/// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 public abstract class BaseEntityController : MonoBehaviour
 {
-
-
     protected StateMachine<BaseEntityController> _stateMachine;
     protected Rigidbody2D _rigidBody;
 
     public BoxCollider2D BoundingBox { get; private set; }
-
 
     public Vector2 Velocity;
     public float MaxSpeed = 10f;
@@ -39,11 +38,15 @@ public abstract class BaseEntityController : MonoBehaviour
     public bool NearLedgeRight;// { get; private set; }
 
     public bool OnGround => _collisionList[(int)DirectionEnum.DOWN];
-    private bool[] _collisionList;
+    public bool[] _collisionList;
     private Collider2D[] _colliderList;
 
     private List<MapArea> _areaModifiers = new();
 
+    /// <summary>
+    /// Get or sets the entities facing direction.
+    /// 1 = right, 2 = left, 0 = Flip
+    /// </summary>
     public float FacingDirection
     {
         get => Mathf.Clamp(transform.localScale.x, -1, 1);
@@ -191,6 +194,11 @@ public abstract class BaseEntityController : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// Gets if the entity can push a colliding entity.
+    /// </summary>
+    /// <param name="dir">Direction of collision to check.</param>
+    /// <returns>False if colliding object is not and entity or is not pushable, True otherwise.</returns>
     public bool CanBePushed(DirectionEnum dir)
     {
         
@@ -199,12 +207,26 @@ public abstract class BaseEntityController : MonoBehaviour
         return target != null ? target.isPushable : false;
     }
 
+    /// <summary>
+    /// Check if there is a collision in the specified direction.
+    /// </summary>
+    /// <param name="dir">Direction to check.</param>
+    /// <returns>True if there is a collision, else false.</returns>
     public bool IsCollision(DirectionEnum dir)
         => _collisionList[(int)dir];
+    /// <summary>
+    /// Returns the object the entity has collided with in the specified direction.
+    /// </summary>
+    /// <param name="dir">Direction to check.</param>
+    /// <returns>The object the entitiy collided with or null if no collision.</returns>
     public Collider2D GetCollision(DirectionEnum dir)
         => IsCollision(dir) ? _colliderList[(int)dir] : null;
 
-
+    /// <summary>
+    /// Check if the entity is current effected by an area modifier.
+    /// </summary>
+    /// <param name="mod">The modifier to check for.</param>
+    /// <returns>True if the entity is effected by the modifier, false otherwise.</returns>
     public bool HasAreaModifier(AreaModifierEnum mod)
     {
         foreach(MapArea area in _areaModifiers)

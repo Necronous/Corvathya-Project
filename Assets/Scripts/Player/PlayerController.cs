@@ -9,11 +9,14 @@ using UnityEngine.InputSystem.LowLevel;
 
 
 /*
- * TODO,
+ * Necronous' TODO,
  * Add ledgecheck cooldown to prevent ledge grabbing right after letting go.
- * Add a struct to control input states better.
  * Add enemy check to CheckLedgeClimb, Enemies should not stop player from climbing
- * Change control for ledge climbing to UP from LEFT/RIGHT
+ * Merge all player states into one class and seperate groups with regions.
+ * Currently the entitiy controller collision check only needs to hit a small part of a wall to register a full collision allowing wallgrabs
+ * Wall hang cancels ledge check. caused by above issue will need to add higher resolution to collision.
+ * Maybe dividing the player height by 4 and using 4 areaoverlaps? Only for left and right sides? 
+ * Do another pass on state switch checks.
  */
 
 
@@ -28,25 +31,39 @@ public class PlayerController : BaseEntityController
     public bool CrouchHeld;
     public bool GlideHeld;
 
+    //How long we can hold the wall before we start sliding down.
+    public float WallGrabTime = .5f;
+    public float WallRunTime = .5f;
 
     void Start()
     {
         base.InitializeEntity();
-        RegisterState((int)EntityStateEnum.IDLE, Player_GroundStates.Idle);
-        RegisterState((int)EntityStateEnum.MOVING, Player_GroundStates.Moving);
-        RegisterState((int)EntityStateEnum.CROUCHING, Player_GroundStates.Crouching);
-        RegisterState((int)EntityStateEnum.JUMP_TAKEOFF, Player_AirStates.Jump_Takeoff);
-        RegisterState((int)EntityStateEnum.FALLING, Player_AirStates.Falling);
-        RegisterState((int)EntityStateEnum.AIR_LAND, Player_AirStates.Air_Land);
-        RegisterState((int)EntityStateEnum.GLIDING, Player_AirStates.Glide);
-        RegisterState((int)EntityStateEnum.LEDGE_HANG, Player_AirStates.LedgeHang);
-        RegisterState((int)EntityStateEnum.LEDGE_CLIMB, Player_AirStates.LedgeClimb);
+        RegisterState((int)EntityStateEnum.IDLE, PlayerStates.Idle);
+        RegisterState((int)EntityStateEnum.MOVING, PlayerStates.Moving);
+        RegisterState((int)EntityStateEnum.CROUCHING, PlayerStates.Crouching);
+        RegisterState((int)EntityStateEnum.JUMP_TAKEOFF, PlayerStates.Jump_Takeoff);
+        RegisterState((int)EntityStateEnum.FALLING, PlayerStates.Falling);
+        RegisterState((int)EntityStateEnum.AIR_LAND, PlayerStates.Air_Land);
+        RegisterState((int)EntityStateEnum.GLIDING, PlayerStates.Glide);
+        
+        RegisterState((int)EntityStateEnum.LEDGE_HANG, PlayerStates.LedgeHang);
+        RegisterState((int)EntityStateEnum.LEDGE_CLIMB, PlayerStates.LedgeClimb);
+
+        RegisterState((int)EntityStateEnum.WALL_HANG, PlayerStates.WallHang);
+        RegisterState((int)EntityStateEnum.WALL_SLIDE, PlayerStates.WallSlide);
+        RegisterState((int)EntityStateEnum.WALL_RUN, PlayerStates.WallRun);
+        RegisterState((int)EntityStateEnum.WALL_KICK_OFF, PlayerStates.WallKickOff);
         SetState((int)EntityStateEnum.IDLE);
 
         //Temp
         CameraController.Main.SetTarget(transform);
     }
+    void FixedUpdate()
+    {
+        UpdateEntity();
+    }
 
+    #region INPUT
     private void OnMove(InputValue val)
     {
         MovementMagnitude = val.Get<float>();
@@ -54,9 +71,9 @@ public class PlayerController : BaseEntityController
     private void OnJump(InputValue val)
     {
         if ((JumpHeld || JumpPressed) && !val.isPressed)
-            JumpHeld = false;
+            JumpHeld = JumpPressed = false;
         else
-            JumpPressed = JumpHeld = true;
+            JumpPressed = true;
     }
     private void OnCrouch(InputValue val)
     {
@@ -72,11 +89,8 @@ public class PlayerController : BaseEntityController
         else
             GlideHeld = true;
     }
+    #endregion
 
-    void FixedUpdate()
-    {
-        UpdateEntity();
-    }
 
 #if DEBUG_PLAYER_CONTROLLER
     private void OnGUI()
