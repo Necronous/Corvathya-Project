@@ -1,4 +1,5 @@
 ﻿using System;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public static class PlayerStates
@@ -155,10 +156,8 @@ public static class PlayerStates
         {
             player.Velocity.x = 0;
             //Check ledge first.
-            if (CheckLedgeGrab(player))
+            if (CheckWall(player))
                 return false;
-            player.SetState((int)EntityStateEnum.WALL_HANG);
-            return false;
         }
 
         if (player.MovementMagnitude != 0)
@@ -234,30 +233,44 @@ public static class PlayerStates
 
     #region LedgeAndWallGrabbing
 
-    private static bool CheckLedgeGrab(PlayerController player)
+    private static bool CheckWall(PlayerController player)
     {
-        float xOffset = (player.BoundingBox.size.x / 2 + 0.2f) * player.FacingDirection;
+        bool[] collisions = new bool[2];
+        player.GetPreciseCollisionsHorizontal(player.FacingDirection, collisions);
+        
+        if ((collisions[0] == true && collisions[1] == false) ||
+             collisions[0] == false && collisions[1] == true)
+            return false;
 
-        Vector3 castStart = new(
-            player.transform.position.x + xOffset,
-            player.transform.position.y + player.BoundingBox.size.y + .1f
-            );
-
-        RaycastHit2D hit = Physics2D.Linecast(castStart, castStart + (Vector3.down * .2f));
-        if (hit.distance > 0)
+        //Check ledge grab
+        player.GetPreciseCollisionsHorizontal(player.FacingDirection, collisions, .7f, 1f);
+        if (collisions[0] == true && collisions[1] == false)
         {
-            //Align the player
-            player.transform.position = new Vector3(
-                castStart.x - player.BoundingBox.size.x / 2,
-                castStart.y - player.BoundingBox.size.y,
-                0
-                );
-            player.Velocity = Vector3.zero;
+            //Ledge grab
+            player.Velocity = Vector2.zero;
+            player.CurrentJumpCount = 0;
+            player.JumpHeld = false;
+            //align the player
+            Collider2D col = player.GetCollision(player.FacingDirection);
+            Vector2 closestpoint = col.ClosestPoint(
+                player.transform.position + 
+                new Vector3(player.BoundingBox.size.x / 2, player.BoundingBox.size.y, 0));
+            player.transform.position = new Vector3(player.transform.position.x, closestpoint.y - player.BoundingBox.size.y, 0);
             player.SetState((int)EntityStateEnum.LEDGE_HANG);
-
             return true;
         }
-
+        //Check wallgrab
+        collisions = new bool[4];
+        player.GetPreciseCollisionsHorizontal(player.FacingDirection, collisions);
+        if (collisions[1] == collisions[2] == collisions[3] == collisions[0] == true)//maybe allow bottom to be free?
+        {
+            //is wallgrab.
+            player.Velocity = Vector2.zero;
+            player.CurrentJumpCount = 0;
+            player.JumpHeld = false;
+            player.SetState((int)EntityStateEnum.WALL_HANG);
+            return true;
+        }
 
         return false;
     }
@@ -288,7 +301,7 @@ public static class PlayerStates
                 new Vector3(-player.BoundingBox.size.x, player.BoundingBox.size.y);
         }
 
-        Collider2D collision = Physics2D.OverlapArea(castStart, castEnd);
+        Collider2D collision = Physics2D.OverlapArea(castStart, castEnd, 1 << 7);
 
         return collision == null;
     }
@@ -305,7 +318,6 @@ public static class PlayerStates
         {
             if (CheckLedgeClimb(player))
             {
-                player.JumpPressed = false;
                 player.SetState((int)EntityStateEnum.LEDGE_CLIMB);
                 return false;
             }
@@ -316,8 +328,11 @@ public static class PlayerStates
     public static bool LedgeClimb(BaseEntityController src)
     {
         //play climb animation.
-        if (src.CurrentStateTime >= 1f)
+        if (src.CurrentStateTime >= .2f)//Time it takes to climb. Sync this with the animation.
         {
+            PlayerController player = src as PlayerController;
+            player.JumpPressed = player.JumpHeld = false;
+
             Vector3 offset = new Vector3(src.BoundingBox.size.x, src.BoundingBox.size.y, 0);
             offset.x *= src.FacingDirection;
             src.transform.position = src.transform.position + offset;
@@ -327,6 +342,7 @@ public static class PlayerStates
 
         return true;
     }
+
 
     public static bool WallHang(BaseEntityController src)
     {
@@ -364,7 +380,6 @@ public static class PlayerStates
         }
         return true;
     }
-
     public static bool WallSlide(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;
@@ -376,7 +391,7 @@ public static class PlayerStates
         }
 
         float speed = player.CrouchHeld ? 5f : 2f;
-        player.Velocity.y = -speed;
+        player.Velocity.y = -speed; //Do we want this to build up over time like gravity?
 
         if(player.OnGround)
         {
@@ -384,9 +399,7 @@ public static class PlayerStates
             player.CurrentJumpCount = 0;
             return false;
         }
-        DirectionEnum dir = DirectionEnum.RIGHT;
-        if(player.FacingDirection < 0) dir = DirectionEnum.LEFT;
-        if (!player.IsCollision(dir))
+        if(player.GetPreciseCollisionsHorizontal(player.FacingDirection, 2)[0] == false)
         {
             player.SetState((int)EntityStateEnum.FALLING);
             return false;
@@ -394,7 +407,6 @@ public static class PlayerStates
 
         return true;
     }
-
     public static bool WallRun(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;
@@ -404,14 +416,14 @@ public static class PlayerStates
             player.SetState((int)EntityStateEnum.WALL_KICK_OFF);
             return false;
         }
-        DirectionEnum dir = DirectionEnum.RIGHT;
-        if (player.FacingDirection < 0) dir = DirectionEnum.LEFT;
-        if (!player.IsCollision(dir))
+
+        if (!player.IsCollision(player.FacingDirection))
         {
             player.SetState((int)EntityStateEnum.FALLING);
             return false;
         }
-        if(player.MovementMagnitude == 0 || 
+
+        if (player.MovementMagnitude == 0 || 
            player.CurrentStateTime >= player.WallRunTime
            )
         {
@@ -423,7 +435,6 @@ public static class PlayerStates
 
         return true;
     }
-
     public static bool WallKickOff(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;

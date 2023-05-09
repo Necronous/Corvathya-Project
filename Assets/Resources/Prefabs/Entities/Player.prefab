@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3672414669775349619}
   - component: {fileID: 3777664628312252984}
   - component: {fileID: 3777664628312252985}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -97,6 +97,8 @@ MonoBehaviour:
   JumpPressed: 0
   CrouchHeld: 0
   GlideHeld: 0
+  WallGrabTime: 0.5
+  WallRunTime: 0.5
 --- !u!50 &3777664628312252984
 Rigidbody2D:
   serializedVersion: 4
@@ -154,7 +156,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7352119960248649386}
   - component: {fileID: 7385433859640250378}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -238,7 +240,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3700391968833434892}
   - component: {fileID: 849726907900648347}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Face
   m_TagString: Untagged
   m_Icon: {fileID: 0}

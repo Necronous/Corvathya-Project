@@ -1,5 +1,5 @@
 
-#define DEBUG_PLAYER_CONTROLLER
+//#define DEBUG_PLAYER_CONTROLLER
 
 using System.Collections;
 using System.Collections.Generic;
@@ -11,11 +11,6 @@ using UnityEngine.InputSystem.LowLevel;
 /*
  * Necronous' TODO,
  * Add ledgecheck cooldown to prevent ledge grabbing right after letting go.
- * Add enemy check to CheckLedgeClimb, Enemies should not stop player from climbing
- * Merge all player states into one class and seperate groups with regions.
- * Currently the entitiy controller collision check only needs to hit a small part of a wall to register a full collision allowing wallgrabs
- * Wall hang cancels ledge check. caused by above issue will need to add higher resolution to collision.
- * Maybe dividing the player height by 4 and using 4 areaoverlaps? Only for left and right sides? 
  * Do another pass on state switch checks.
  */
 

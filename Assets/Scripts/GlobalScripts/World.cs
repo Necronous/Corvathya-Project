@@ -1,16 +1,25 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static UnityEngine.EventSystems.EventTrigger;
 
 /// <summary>
-/// The world class singleton, Always exists cannot be destroyed. Stores world variables, saving loading, creating the player and loading maps.
+/// The world class singleton, Always exists cannot be destroyed.
+/// Stores world variables, saving loading, creating the player and loading maps.
+/// Is created in the main menu scene and exists forever from there.
+/// Map.cs will not work without this.
 /// </summary>
 public class World : MonoBehaviour
 {
     public static World Instance { get; private set; }
     public static PlayerController Player { get; private set; }
+
+    [SerializeField]
+    public GameObject PlayerPrefab;
+
 
     private Dictionary<string, object> _worldVariables = new();
 
@@ -20,6 +29,7 @@ public class World : MonoBehaviour
             return;
         Instance = this;
         DontDestroyOnLoad(this);
+
     }
 
     #region WorldVariables
@@ -28,7 +38,7 @@ public class World : MonoBehaviour
     /// </summary>
     /// <param name="key">Key of the value to check</param>
     /// <returns></returns>
-    public bool IsWorldVariable(string key) => _worldVariables.ContainsKey(key);
+    public bool HasWorldVariable(string key) => _worldVariables.ContainsKey(key);
 
     /// <summary>
     /// returns the world variable stored with the key.
@@ -48,13 +58,15 @@ public class World : MonoBehaviour
     {
         result = default(T);
         Type t = typeof(T);
-        if (!IsWorldVariable(key))
+        if (!HasWorldVariable(key))
             return false;
         object value = _worldVariables[key];
-        if (value.GetType() != t)
-            return false;
-        result = (T)value;
-        return true;
+        if (value is T v)
+        {
+            result = v;
+            return true;
+        }
+        return false;
     }
     #endregion
     #region MapLoading
@@ -64,8 +76,16 @@ public class World : MonoBehaviour
 
     public void LoadMap(string mapName)
     {
-        if(MapExists(mapName))
-            SceneManager.LoadScene(mapName);
+        if (!MapExists(mapName))
+            return;
+        SceneManager.LoadScene(mapName);
+        MapEntrance e = Map.Instance.GetDefaultEntrance();
+        if (e == null)
+        {
+            Debug.LogError("Map has no entrances!");
+            Player.transform.position = Vector3.zero;
+            return;
+        }
     }
 
     public void LoadMapWithEntrance(string mapname, string entry)
@@ -74,9 +94,26 @@ public class World : MonoBehaviour
             return;
         SceneManager.LoadScene(mapname);
         MapEntrance e = Map.Instance.GetEntrance(entry);
+        if (e == null)
+            e = Map.Instance.GetDefaultEntrance();
         if(e == null)
+        {
+            Debug.LogError("Map has no entrances!");
             Player.transform.position = Vector3.zero;
+            return;
+        }
         Player.transform.position = e.transform.position;
+    }
+
+    public void QuitToMainMenu()
+    {
+        //Save world variables?
+        if(Player != null)
+        {
+            //Save player?
+            DestroyPlayer();
+        }
+        SceneManager.LoadScene("MainMenu");
     }
 
     #endregion
@@ -84,12 +121,17 @@ public class World : MonoBehaviour
 
     public void CreatePlayer()
     {
-
+        if (Player != null)
+            return;
+        Player = Instantiate(PlayerPrefab).GetComponent<PlayerController>();
+        Player.transform.parent = transform;
     }
 
     public void DestroyPlayer()
     {
-
+        if (Player == null)
+            return;
+        Destroy(Player);
     }
 
     #endregion
