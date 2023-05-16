@@ -4,8 +4,9 @@ using UnityEngine;
 
 public static class PlayerStates
 {
-    #region Misc
 
+
+    #region GroundStates
     private static bool CheckCommonGroundCancels(PlayerController player)
     {
         if (player.JumpPressed)
@@ -26,10 +27,6 @@ public static class PlayerStates
         return false;
     }
 
-    #endregion
-
-    #region GroundStates
-
     public static bool Idle(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;
@@ -43,6 +40,7 @@ public static class PlayerStates
             return false;
         }
 
+        player.PlayAnimation("Idle");
         //play idle animation.
         return true;
     }
@@ -74,6 +72,8 @@ public static class PlayerStates
         if (player.MovementMagnitude != 0)
             player.FacingDirection = (player.MovementMagnitude);
 
+        player.PlayAnimation("Running");
+
         return true;
     }
 
@@ -100,6 +100,40 @@ public static class PlayerStates
         if ((player.Velocity.x < 0 && player.IsCollision(DirectionEnum.LEFT) && !player.CanBePushed(DirectionEnum.LEFT))
             || player.Velocity.x > 0 && player.IsCollision(DirectionEnum.RIGHT) && !player.CanBePushed(DirectionEnum.RIGHT))
             player.Velocity.x = 0;
+
+        player.PlayAnimation("Crouch");
+
+        return true;
+    }
+
+    public static bool Jump_Takeoff(BaseEntityController src)
+    {
+        PlayerController player = src as PlayerController;
+
+        player.JumpPressed = false;
+        player.JumpHeld = true;
+
+        if (player.JumpData.CurrentCount >= player.JumpData.MaxCount)
+        {
+            player.SetState((int)player.LastState);
+            return false;
+        }
+        player.JumpData.CurrentCount++;
+
+        src.Velocity.y = src.JumpForce;
+        src.SetState((int)EntityStateEnum.FALLING);
+
+        player.PlayAnimation("Jump_Takeoff");
+
+        return true;
+    }
+    public static bool Air_Land(BaseEntityController src)
+    {
+        PlayerController player = src as PlayerController;
+        player.JumpData.CurrentCount = 0;
+
+        //Play landing animation?
+        player.SetState((int)EntityStateEnum.IDLE);
 
         return true;
     }
@@ -139,6 +173,11 @@ public static class PlayerStates
         if (player.Velocity.y > 0 && player.IsCollision(DirectionEnum.UP))
             player.Velocity.y = 0;
 
+        if (player.Velocity.y > 0)
+            player.PlayAnimation("Jump_Up");
+        else
+            player.PlayAnimation("Falling");
+
         return true;
     }
 
@@ -165,34 +204,7 @@ public static class PlayerStates
         return true;
     }
 
-    public static bool Jump_Takeoff(BaseEntityController src)
-    {
-        PlayerController player = src as PlayerController;
-
-        player.JumpPressed = false;
-        player.JumpHeld = true;
-
-        if (player.CurrentJumpCount >= player.MaxJumpCount)
-        {
-            player.SetState((int)player.LastState);
-            return false;
-        }
-        player.CurrentJumpCount++;
-
-        src.Velocity.y = src.JumpForce;
-        src.SetState((int)EntityStateEnum.FALLING);
-        return true;
-    }
-    public static bool Air_Land(BaseEntityController src)
-    {
-        PlayerController player = src as PlayerController;
-        player.CurrentJumpCount = 0;
-
-        //Play landing animation?
-        player.SetState((int)EntityStateEnum.IDLE);
-
-        return true;
-    }
+    
 
     public static bool Glide(BaseEntityController src)
     {
@@ -248,7 +260,7 @@ public static class PlayerStates
         {
             //Ledge grab
             player.Velocity = Vector2.zero;
-            player.CurrentJumpCount = 0;
+            player.JumpData.CurrentCount = 0;
             player.JumpHeld = false;
             //align the player
             Collider2D col = player.GetCollision(player.FacingDirection);
@@ -266,7 +278,7 @@ public static class PlayerStates
         {
             //is wallgrab.
             player.Velocity = Vector2.zero;
-            player.CurrentJumpCount = 0;
+            player.JumpData.CurrentCount = 0;
             player.JumpHeld = false;
             player.SetState((int)EntityStateEnum.WALL_HANG);
             return true;
@@ -316,12 +328,24 @@ public static class PlayerStates
 
         if (player.JumpPressed)
         {
-            if (CheckLedgeClimb(player))
+            bool moveSameDir = false;
+            if((player.MovementMagnitude > 0 && player.FacingDirection > 0)
+                || (player.MovementMagnitude < 0 && player.FacingDirection < 0))
+                moveSameDir = true;
+
+            if (moveSameDir && CheckLedgeClimb(player))
             {
                 player.SetState((int)EntityStateEnum.LEDGE_CLIMB);
                 return false;
             }
+            else if(!moveSameDir && player.MovementMagnitude != 0)
+            {
+                player.SetState((int)EntityStateEnum.WALL_KICK_OFF);
+                return false;
+            }
         }
+
+        player.PlayAnimation("EdgeGrab");
 
         return true;
     }
@@ -342,8 +366,6 @@ public static class PlayerStates
 
         return true;
     }
-
-
     public static bool WallHang(BaseEntityController src)
     {
         PlayerController player = src as PlayerController;
@@ -378,6 +400,8 @@ public static class PlayerStates
             player.SetState((int)EntityStateEnum.WALL_SLIDE);
             return false;
         }
+        player.PlayAnimation("WallSlide");
+
         return true;
     }
     public static bool WallSlide(BaseEntityController src)
@@ -396,7 +420,7 @@ public static class PlayerStates
         if(player.OnGround)
         {
             player.SetState((int)EntityStateEnum.IDLE);
-            player.CurrentJumpCount = 0;
+            player.JumpData.CurrentCount = 0;
             return false;
         }
         if(player.GetPreciseCollisionsHorizontal(player.FacingDirection, 2)[0] == false)
@@ -404,6 +428,7 @@ public static class PlayerStates
             player.SetState((int)EntityStateEnum.FALLING);
             return false;
         }
+        player.PlayAnimation("WallSlide");
 
         return true;
     }
@@ -424,7 +449,8 @@ public static class PlayerStates
         }
 
         if (player.MovementMagnitude == 0 || 
-           player.CurrentStateTime >= player.WallRunTime
+           player.CurrentStateTime >= player.WallRunTime ||
+           player.IsCollision(DirectionEnum.UP)
            )
         {
             player.SetState((int)EntityStateEnum.WALL_SLIDE);
@@ -439,7 +465,7 @@ public static class PlayerStates
     {
         PlayerController player = src as PlayerController;
 
-        player.Velocity.x = -(player.FacingDirection * 10f);
+        player.Velocity.x = -(player.FacingDirection * 20f);
         player.Velocity.y = 15f;
         player.SetState((int)EntityStateEnum.FALLING);
 
@@ -449,4 +475,5 @@ public static class PlayerStates
     }
 
     #endregion
+
 }

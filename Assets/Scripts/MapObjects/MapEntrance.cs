@@ -10,27 +10,19 @@ public class MapEntrance : MonoBehaviour
     public string TargetMapName = "";
     [SerializeField]
     public string TargetMapEntranceName = "";
+    [SerializeField]
+    public DirectionEnum EntranceFacingDirection = DirectionEnum.RIGHT;
 
-    void Start()
+
+    void OnEnable()
     {
-        if (Map.Instance.GetEntrance(EntranceName) != null)
-            return;
-        Map.Instance.AddEntrance(this);
+        World.Instance.AddEntrance(this);
     }
 
-    public void Activate()
+    private void OnTriggerEnter2D(Collider2D collision)
     {
-        //If mapname is null the entrance points to an entrance on this map.
-        if(string.IsNullOrEmpty(TargetMapName))
-        {
-            MapEntrance e = Map.Instance.GetEntrance(TargetMapEntranceName);
-            if (e == null)
-                return;
-            World.Player.transform.position = e.transform.position;
-        }
-        else
-        {
-            World.Instance.LoadMapWithEntrance(TargetMapName, TargetMapEntranceName);
-        }
+        if (World.Instance.MapTransitionHandler.IsTransitioning)
+            return;
+        World.Instance.MapTransitionHandler.StartMapTransition(this);
     }
 }

@@ -1,8 +1,6 @@
 ﻿using System;
 using UnityEngine;
 
-
-//Add all entity states here.
 public enum EntityStateEnum
 {
     IDLE,

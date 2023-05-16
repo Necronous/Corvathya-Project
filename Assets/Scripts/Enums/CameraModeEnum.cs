@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 
 public enum CameraModeEnum
 {
-    FOLLOW_OBJECT,
+    STATIC,
+    FOLLOW_PLAYER,
     CINEMATIC,
-
-    FADE_IN,
-    FADE_OUT,
+    FADING,
 }

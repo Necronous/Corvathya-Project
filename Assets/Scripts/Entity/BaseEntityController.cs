@@ -19,27 +19,30 @@ public abstract class BaseEntityController : MonoBehaviour
 
     public BoxCollider2D BoundingBox { get; private set; }
 
+    [Header("Base_Physics")]
     public Vector2 Velocity;
     public float MaxSpeed = 10f;
     public float Acceleration = .5f;
     public float Deceleration = .5f;
-
-    public float ViewDistance = 8f;
-
     public float JumpForce = 15f;
     public float GravityForce = .9f;
-
-    public float MovementMagnitude;
-    
-    public bool isAttacking;
     public bool isPushable = true;
 
-    public bool NearLedgeLeft;// { get; private set; } Get set makes it invisible in the editor.
-    public bool NearLedgeRight;// { get; private set; }
+
+    [Header("Base_Input")]
+    public float MovementMagnitude;
+    public bool isAttacking;
+    public bool NearLedgeLeft;
+    public bool NearLedgeRight;
+
+    [Header("Base_Misc")]
+    public float ViewDistance = 8f;
+
 
     public bool OnGround => _baseCollisionInfo[(int)DirectionEnum.DOWN].collision;
     
     private List<MapArea> _areaModifiers = new();
+    private Animator _animator;
 
     /// <summary>
     /// Get or sets the entities facing direction.
@@ -91,6 +94,8 @@ public abstract class BaseEntityController : MonoBehaviour
         //Get basic info first.
         for (int i = 0; i < contactCount; i++)
         {
+            if (contacts[i].collider.isTrigger || contacts[i].collider.gameObject.layer == 1 << 7)
+                continue;
             Vector3 normal = contacts[i].normal;
             Collider2D collider = contacts[i].collider;
             if (Mathf.Abs(normal.x) > Mathf.Abs(normal.y))
@@ -120,8 +125,8 @@ public abstract class BaseEntityController : MonoBehaviour
     /// <param name="start">Where to start</param>
     /// <param name="end">Where to end</param>
     /// <returns></returns>
-    public bool[] GetPreciseCollisionsHorizontal(DirectionEnum dir, int resolution, float start = 0, float end = 0)
-        => GetPreciseCollisionsHorizontal(dir == DirectionEnum.LEFT ? -1 : 1, resolution);
+    public bool[] GetPreciseCollisionsHorizontal(DirectionEnum dir, int resolution, float start = 0, float end = 0, int layermask = 1 << 7)
+        => GetPreciseCollisionsHorizontal(dir == DirectionEnum.LEFT ? -1 : 1, resolution, layermask);
     /// <summary>
     /// get more precise collision from specified side.
     /// Start and end are for checking collision on a certain part must be between 0f - 1f where 1f is height of player and 0 is bottom.
@@ -132,10 +137,10 @@ public abstract class BaseEntityController : MonoBehaviour
     /// <param name="start">Where to start</param>
     /// <param name="end">Where to end</param>
     /// <returns></returns>
-    public bool[] GetPreciseCollisionsHorizontal(float dir, int resolution, float start = 0, float end = 1f)
+    public bool[] GetPreciseCollisionsHorizontal(float dir, int resolution, float start = 0, float end = 1f, int layermask = 1 << 7)
     {
         bool[] cols = new bool[resolution];
-        GetPreciseCollisionsHorizontal(dir,cols , start, end);
+        GetPreciseCollisionsHorizontal(dir,cols , start, end, layermask);
         return cols;
     }
     /// <summary>
@@ -148,7 +153,7 @@ public abstract class BaseEntityController : MonoBehaviour
     /// <param name="start">Where to start</param>
     /// <param name="end">Where to end</param>
     /// <param name="array">Array of bools to retrieve results.</param>
-    public void GetPreciseCollisionsHorizontal(float dir, bool[] array, float start = 0, float end = 1f)
+    public void GetPreciseCollisionsHorizontal(float dir, bool[] array, float start = 0, float end = 1f, int layermask = 1 << 7)
     {
         start = Mathf.Clamp(Mathf.Min(start, end), 0f, 1f);
         end = Mathf.Clamp(Mathf.Max(start, end), 0f, 1f);
@@ -165,10 +170,6 @@ public abstract class BaseEntityController : MonoBehaviour
         float xOffset = transform.position.x + ((BoundingBox.size.x / 2) * dir);
         float boxHeight = (endY - startY) / resolution;
         
-        //cast 4 boxes of height (boundingbox.size.y / resolution) along the player y axis,
-        //if all 4 boxes have collisions it is a wall
-        //the topmost box will have an extra linecast check for ledge grabbing to make sure it isent half full
-
         for (int i = 0; i < resolution; i++)
         {
             Vector2 boxStart = new(
@@ -176,11 +177,7 @@ public abstract class BaseEntityController : MonoBehaviour
                 transform.position.y + startY + (i * boxHeight)
                 );
             Vector2 boxEnd = boxStart + new Vector2(.1f * dir, boxHeight);
-            array[i] = Physics2D.OverlapArea(boxStart, boxEnd, 1 << 7); //Only check SOLID layer for now.
-            if (array[i] == true)
-                Debug.DrawLine(boxStart, boxEnd, Color.green);
-            else
-                Debug.DrawLine(boxStart, boxEnd, Color.red);
+            array[i] = Physics2D.OverlapArea(boxStart, boxEnd, layermask); //Only check SOLID layer for now.
         }
 
         return;
@@ -219,13 +216,20 @@ public abstract class BaseEntityController : MonoBehaviour
 
     #endregion
 
+    #region Animation
+
+    public void PlayAnimation(string name)
+    {
+        _animator.Play("Base Layer." + name);
+    }
+
+    #endregion
     protected void InitializeEntity()
     {
         if (GetType() != typeof(PlayerController))
-        {
-            //if it is not the player.
-            Map.Instance?.AddEntity(this);
-        }
+            World.Instance.AddEntity(this);
+        
+        _animator = transform.Find("Sprite").GetComponent<Animator>();
         _stateMachine = new();
         _rigidBody = GetComponent<Rigidbody2D>();
         BoundingBox = GetComponent<BoxCollider2D>();
@@ -245,13 +249,12 @@ public abstract class BaseEntityController : MonoBehaviour
         Vector2 leftCheck = new Vector2(transform.position.x - xDistanceFromOrigin, transform.position.y);
         Vector2 rightCheck = new Vector2(transform.position.x + xDistanceFromOrigin, transform.position.y);
 
-        NearLedgeLeft = Physics2D.Linecast(leftCheck, leftCheck - ( Vector2.up * distanceToCheck));
-        NearLedgeRight = Physics2D.Linecast(rightCheck, rightCheck - ( Vector2.up * distanceToCheck));
+        NearLedgeLeft = !Physics2D.Linecast(leftCheck, leftCheck - ( Vector2.up * distanceToCheck), 1 << 7);
+        NearLedgeRight = !Physics2D.Linecast(rightCheck, rightCheck - ( Vector2.up * distanceToCheck), 1 << 7);
 
         _stateMachine.UpdateMachine(this);
         _rigidBody.velocity = Velocity;
     }
-
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -265,6 +268,11 @@ public abstract class BaseEntityController : MonoBehaviour
         MapArea area = collision.GetComponent<MapArea>();
         if (area != null)
             _areaModifiers.Remove(area);
+    }
+
+    public void SetPosition(Vector2 position)
+    {
+        _rigidBody.MovePosition(position);
     }
 
     /// <summary>

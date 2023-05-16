@@ -1,34 +1,24 @@
 
-//#define DEBUG_PLAYER_CONTROLLER
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.LowLevel;
-
-
-/*
- * Necronous' TODO,
- * Add ledgecheck cooldown to prevent ledge grabbing right after letting go.
- * Do another pass on state switch checks.
- */
-
 
 
 public class PlayerController : BaseEntityController
 {
+    [Header("Player_Physics")]
+    //How long we can hold the wall before we start sliding down.
+    public float WallGrabTime = .5f;
+    public float WallRunTime = .5f;
+    public (byte CurrentCount, byte MaxCount) JumpData = new(0, 2);
 
-    public byte CurrentJumpCount;
-    public byte MaxJumpCount = 2;
+    [Header("Player_Input")]
     public bool JumpHeld;
     public bool JumpPressed;
     public bool CrouchHeld;
     public bool GlideHeld;
 
-    //How long we can hold the wall before we start sliding down.
-    public float WallGrabTime = .5f;
-    public float WallRunTime = .5f;
+    public bool PauseInput;
 
     void Start()
     {
@@ -49,9 +39,6 @@ public class PlayerController : BaseEntityController
         RegisterState((int)EntityStateEnum.WALL_RUN, PlayerStates.WallRun);
         RegisterState((int)EntityStateEnum.WALL_KICK_OFF, PlayerStates.WallKickOff);
         SetState((int)EntityStateEnum.IDLE);
-
-        //Temp
-        CameraController.Main.SetTarget(transform);
     }
     void FixedUpdate()
     {
@@ -61,10 +48,14 @@ public class PlayerController : BaseEntityController
     #region INPUT
     private void OnMove(InputValue val)
     {
-        MovementMagnitude = val.Get<float>();
+        if(!PauseInput)
+            MovementMagnitude = val.Get<float>();
     }
     private void OnJump(InputValue val)
     {
+        if (PauseInput)
+            return;
+
         if ((JumpHeld || JumpPressed) && !val.isPressed)
             JumpHeld = JumpPressed = false;
         else
@@ -72,6 +63,9 @@ public class PlayerController : BaseEntityController
     }
     private void OnCrouch(InputValue val)
     {
+        if (PauseInput)
+            return;
+
         if (CrouchHeld && !val.isPressed)
             CrouchHeld = false;
         else
@@ -79,29 +73,26 @@ public class PlayerController : BaseEntityController
     }
     private void OnGlide(InputValue val)
     {
+        if (PauseInput)
+            return;
+
         if (!val.isPressed)
             GlideHeld = false;
         else
             GlideHeld = true;
     }
+
+    private void OnActivate(InputValue val)
+    {
+        if (PauseInput)
+            return;
+
+        if(!val.isPressed)
+        {
+            
+        }
+    }
     #endregion
 
 
-#if DEBUG_PLAYER_CONTROLLER
-    private void OnGUI()
-    {
-        //For debugging
-        GUILayout.Label("Player state:");
-        GUILayout.Label("CurrentState: " + (EntityStateEnum)CurrentState);
-        GUILayout.Label($"CurrentStateTime: {CurrentStateTime}s");
-        GUILayout.Label("LastState: " + (EntityStateEnum)LastState);
-        GUILayout.Label($"LastStateTime: {LastStateTime}s");
-        GUILayout.Label($"--");
-        GUILayout.Label($"CollisionUp: {IsCollision(DirectionEnum.UP)}");
-        GUILayout.Label($"CollisionRight: {IsCollision(DirectionEnum.RIGHT)}");
-        GUILayout.Label($"CollisionDown: {IsCollision(DirectionEnum.DOWN)}");
-        GUILayout.Label($"CollisionLeft: {IsCollision(DirectionEnum.LEFT)}");
-    }
-
-#endif
 }
