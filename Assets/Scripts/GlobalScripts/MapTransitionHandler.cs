@@ -71,8 +71,11 @@ public class MapTransitionHandler
         if(!string.IsNullOrEmpty(targetMap))
             World.Instance.LoadMap(targetMap);
 
-        _targetEntrance = World.Instance.GetEntrance(targetEntry);
-        World.Instance.SetWorldVariable("player.lastentrance", _targetEntrance.EntranceName);
+        if (string.IsNullOrEmpty(targetEntry))
+            _targetEntrance = World.Instance.GetDefaultEntrance();
+        else
+            _targetEntrance = World.Instance.GetEntrance(targetEntry);
+        World.Instance.SetWorldVariable("player.lastentrance", World.Instance.GetEntranceIndex(_targetEntrance));
 
         _moveMag = (_targetEntrance.EntranceFacingDirection == DirectionEnum.RIGHT) ? 1 : -1;
 

@@ -244,7 +244,7 @@ public abstract class BaseEntityController : MonoBehaviour
         //Check for ledges
         float xDistanceFromOrigin = BoundingBox.size.x / 2 + .2f;
         float distanceToCheck = 0.2f;   
-        //alter the xoffset based on velocity? 
+        //change the xoffset based on velocity? 
 
         Vector2 leftCheck = new Vector2(transform.position.x - xDistanceFromOrigin, transform.position.y);
         Vector2 rightCheck = new Vector2(transform.position.x + xDistanceFromOrigin, transform.position.y);

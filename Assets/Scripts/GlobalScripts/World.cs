@@ -44,36 +44,43 @@ public class World : MonoBehaviour
         DontDestroyOnLoad(this);
 
     }
-
-    //Debugging
-    private void OnGUI()
+    private void PrintWorldVariables()
     {
-        GUILayout.BeginArea(new Rect(Screen.width - 400, 0, 400, 400));
-        GUILayout.Label("World Variables::");
+        Debug.Log("World variables...");
         foreach(KeyValuePair<string, object> kvp in _worldVariables)
-            GUILayout.Label(kvp.Key + " : " + kvp.Value.ToString());
-        
-        GUILayout.EndArea();
+            Debug.Log(kvp.Key + " : " + kvp.Value.ToString());
     }
 
     private void Start()
     {
         MapTransitionHandler = new();
+        _worldVariables = WorldVariablesDefine.GetDefaultWorldVariables();
         //temp
+        Transform transform = GameObject.Find("PlayerSpawn").transform;
         CreatePlayer();
         CameraController.Instance.SetState((int)CameraModeEnum.FOLLOW_PLAYER);
-        Player.transform.position = GetDefaultEntrance().transform.position;
+        Player.transform.position = transform.position;
         _currentMapIndex = -1;
         //
     }
 
     private void Update()
     {
+#if DEBUG
+        if (Input.GetKeyUp(KeyCode.Keypad0))
+            PrintWorldVariables();
+#endif
         if(MapTransitionHandler.IsTransitioning)
             MapTransitionHandler.Update();
     }
 
     #region WorldVariables
+
+    public Dictionary<string, object> GetWorldVariables()
+        => _worldVariables;
+    public void SetWorldVariables(Dictionary<string, object> vars)
+        => _worldVariables = vars;
+        
     /// <summary>
     /// Checks if a world variable exists.
     /// </summary>
@@ -98,8 +105,6 @@ public class World : MonoBehaviour
     {
         if(HasWorldVariable(key))
             _worldVariables[key] = value;
-        else
-            _worldVariables.Add(key, value);
     }
 
     /// <summary>
@@ -183,100 +188,6 @@ public class World : MonoBehaviour
         if (Player == null)
             return;
         Destroy(Player);
-    }
-
-    #endregion
-    #region SavingLoading
-
-    public void SaveGame(string savePath)
-    {
-        byte[] worldData = SerializeWorldVariables();
-        //get player data.
-
-        using (BinaryWriter writer = new(new FileStream(savePath, FileMode.Create)))
-        {
-            //Header = 30 bytes.
-            //the header of all saves will be loaded on game start to fill in the load game list with info.
-
-            //magic
-            writer.Write(new char[] { 'S','A', 'V', 'E' });
-            //Game version. Major - Minor
-            writer.Write(VERSION_MAJOR); writer.Write(VERSION_MINOR);
-            //Date and time
-            DateTime time = DateTime.Now;
-            writer.Write(time.Day); writer.Write(time.Month); writer.Write(time.Year);
-            writer.Write(time.Hour); writer.Write(time.Minute);
-
-            //Write current map name as level index (short)
-            writer.Write((short)_currentMapIndex);
-
-            //EndHeader 
-
-
-            //Write serialized world data.
-            writer.Write(worldData.Length);
-            writer.Write(worldData);
-        }
-    }
-
-    public void LoadGame()
-    {
-
-    }
-
-    private byte[] SerializeWorldVariables()
-    {
-        MemoryStream ms = new();
-        using (BinaryWriter writer = new(ms))
-        {
-            writer.Write(_worldVariables.Count);
-            foreach(KeyValuePair<string, object> kvp in _worldVariables)
-            {
-                //First we write the key, then we write a byte which indicates value type then we write the value.
-                //Maybe implement ISavable interface for other values.
-                //Add encryption for strings.
-                writer.Write(kvp.Key);
-                if (kvp.Value is byte by)
-                { writer.Write((byte)0); writer.Write(by); }
-                else if (kvp.Value is short sh)
-                { writer.Write((byte)1); writer.Write(sh); }
-                else if (kvp.Value is int i)
-                { writer.Write((byte)2); writer.Write(i); }
-                else if (kvp.Value is long lo)
-                { writer.Write((byte)3); writer.Write(lo); }
-                else if (kvp.Value is bool bo)
-                { writer.Write((byte)4); writer.Write(bo); }
-                else if (kvp.Value is string st)
-                { writer.Write((byte)5); writer.Write(st); }
-            }
-        }
-        return ms.ToArray();
-    }
-    private void DeserializeWorldVariables(byte[] b)
-    {
-        MemoryStream ms = new(b);
-        ms.Position = 0;
-        _worldVariables.Clear();
-        using (BinaryReader reader = new(ms))
-        {
-            int count = reader.ReadInt32();
-            for(int i = 0; i < count; i++)
-            {
-                string key = reader.ReadString();
-                byte valuetype = reader.ReadByte();
-                object value = 0;
-                switch(valuetype)
-                {
-                    case 0: value = reader.ReadByte(); break;
-                    case 1: value = reader.ReadInt16(); break;
-                    case 2: value = reader.ReadInt32(); break;
-                    case 3: value = reader.ReadInt64(); break;
-                    case 4: value = reader.ReadBoolean(); break;
-                    case 5: value = reader.ReadString(); break;
-                }
-                _worldVariables.Add(key, value);
-            }
-        }
     }
 
     #endregion
