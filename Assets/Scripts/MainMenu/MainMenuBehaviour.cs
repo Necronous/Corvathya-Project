@@ -17,7 +17,11 @@ public class MainMenuBehaviour : MonoBehaviour
     }
     public void LoadGame_Click() 
     {
-        Debug.Log("Loadgame menu clicked");
+        if (World.Instance.SaveHandler.AllSaves.Length > 0)
+        {
+            World.Instance.SaveHandler.SetActiveSave(World.Instance.SaveHandler.AllSaves[0]);
+            World.Instance.SetupGame();
+        }
     }
     public void OptionsMenu_Click() 
     {

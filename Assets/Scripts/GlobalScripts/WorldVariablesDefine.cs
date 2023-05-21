@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -16,6 +17,7 @@ public static class WorldVariablesDefine
         {
             { "player.lastentrance", 0 },
             { "player.lastcheckpoint", 0 },
+            { "player.position", Vector3.Zero },
 
             { "currentmapindex", 1 },
             { "newgame", true },

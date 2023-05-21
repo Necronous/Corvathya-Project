@@ -79,7 +79,12 @@ public class World : MonoBehaviour
         {
             Player.transform.position = new Vector3(-2.95f, -0.27f, -0.01f);
             SetWorldVariable("newgame", false);
+            SetWorldVariable("player.position", Player.transform.position);
             SaveHandler.Save();
+        }
+        else
+        {
+            Player.transform.position = GetWorldVariable<Vector3>("player.position");
         }
         CameraController.Instance.SetStaticCamera();
         CameraController.Instance.SetPosition(Player.transform.position);
