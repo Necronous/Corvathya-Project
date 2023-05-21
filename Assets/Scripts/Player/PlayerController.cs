@@ -94,21 +94,6 @@ public class PlayerController : BaseEntityController
         }
     }
     #endregion
-    #region Saving/Loading
 
-    public Dictionary<string, object> CreateSavablePlayerData()
-    {
-        Dictionary<string, object> dict = new();
-        //Save player variables here.
-
-
-        return dict;
-    }
-    public void LoadPlayerData(Dictionary<string, object> dict)
-    {
-        //Load player data from dictionary.
-    }
-
-    #endregion
 
 }

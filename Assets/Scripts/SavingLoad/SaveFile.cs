@@ -4,6 +4,14 @@ using System.Diagnostics;
 using System.IO;
 public class SaveFile
 {
+    public enum SaveFault
+    {
+        NONE,
+        INVALID_MAGIC,
+        VERSION_MISMATCH,
+    }
+    public const string SAVE_EXTENSION = ".sve";
+
     public readonly string FilePath;
 
     public short VersionMajor { get; private set; }
@@ -11,16 +19,23 @@ public class SaveFile
     public DateTime DateTime { get; private set; }
     public int MapIndex { get; private set; }
 
+    public SaveFault Fault { get; private set; }
+
     public SaveFile(string filepath)
     {
         VersionMajor = World.VERSION_MAJOR; 
         VersionMinor = World.VERSION_MINOR;
         DateTime = DateTime.Now;
         MapIndex = 0;
+
+        FilePath = filepath;
+        if (!filepath.EndsWith(SAVE_EXTENSION))
+            filepath += SAVE_EXTENSION;
+
         if (Exists())
             ReadHeader();
-    }
 
+    }
     public bool Exists()
         => File.Exists(FilePath);
 
@@ -29,49 +44,41 @@ public class SaveFile
         //Header is 30 bytes long.
         using (BinaryReader reader = new(new FileStream(FilePath, FileMode.Open)))
         {
+            Fault = SaveFault.NONE;
+
             string magic = new string(reader.ReadChars(4));
             if (magic != "SAVE")
             {
+                Fault = SaveFault.INVALID_MAGIC;
                 return;
             }
             VersionMajor = reader.ReadInt16();
             VersionMinor = reader.ReadInt16();
             DateTime = new(reader.ReadInt32(), reader.ReadInt32(), reader.ReadInt32(),
                 reader.ReadInt32(), reader.ReadInt32(), 0);
-            MapIndex = reader.ReadInt16();
+
         }
     }
 
     public void Save()
     {
         byte[] worldData = SerializeDictionary(World.Instance.GetWorldVariables());
-        byte[] playerData = SerializeDictionary(World.Player.CreateSavablePlayerData());
-        //get player data.
+        
 
         using (BinaryWriter writer = new(new FileStream(FilePath, FileMode.Create)))
         {
-            //Header = 30 bytes.
-            //the header of all saves will be loaded on game start to fill in the load game list with info.
-
-            //magic
+            //Header = 28 bytes.
             writer.Write(new char[] { 'S', 'A', 'V', 'E' });
-            //Game version. Major - Minor
             writer.Write(World.VERSION_MAJOR); writer.Write(World.VERSION_MINOR);
-            //Date and time
             DateTime time = DateTime.Now;
             writer.Write(time.Year); writer.Write(time.Month); writer.Write(time.Day);
             writer.Write(time.Hour); writer.Write(time.Minute);
-
-            //Write current map name as level index (short)
-            writer.Write((short)World.Instance.GetCurrentMapIndex());
 
             //EndHeader 
 
             //Write serialized data.
             writer.Write(worldData.Length);
             writer.Write(worldData);
-            writer.Write(playerData.Length);
-            writer.Write(playerData);
         }
 
         //refresh header.
@@ -86,9 +93,7 @@ public class SaveFile
         {
             reader.BaseStream.Position = 30; //Skip header.
             Dictionary<string, object> worldVars = DeserializeDictionary(reader.ReadBytes(reader.ReadInt32()));
-            Dictionary<string, object> playerVars = DeserializeDictionary(reader.ReadBytes(reader.ReadInt32()));
             World.Instance.SetWorldVariables(worldVars);
-            World.Player.LoadPlayerData(playerVars);
         }
     }
 
@@ -101,7 +106,6 @@ public class SaveFile
             foreach (KeyValuePair<string, object> kvp in dict)
             {
                 //First we write the key, then we write a byte which indicates value type then we write the value.
-                //Maybe implement ISavable interface for other values.
                 //Add encryption for strings.
                 writer.Write(kvp.Key);
                 if (kvp.Value is byte by)
@@ -116,6 +120,17 @@ public class SaveFile
                 { writer.Write((byte)4); writer.Write(bo); }
                 else if (kvp.Value is string st)
                 { writer.Write((byte)5); writer.Write(st); }
+                else if (kvp.Value is UnityEngine.Vector2 v2)
+                { writer.Write((byte)6); writer.Write(v2.x); writer.Write(v2.y); }
+                else if (kvp.Value is UnityEngine.Vector3 v3)
+                { writer.Write((byte)7); writer.Write(v3.x); writer.Write(v3.y); writer.Write(v3.z); }
+                else if (kvp.Value is UnityEngine.Vector4 v4)
+                { writer.Write((byte)8); writer.Write(v4.x); writer.Write(v4.y); writer.Write(v4.z); writer.Write(v4.w); }
+                else if (kvp.Value is float f)
+                { writer.Write((byte)9); writer.Write(f); }
+                else if (kvp.Value is double dd)
+                { writer.Write((byte)10); writer.Write(dd); }
+
             }
         }
         return ms.ToArray();
@@ -143,6 +158,11 @@ public class SaveFile
                     case 3: value = reader.ReadInt64(); break;
                     case 4: value = reader.ReadBoolean(); break;
                     case 5: value = reader.ReadString(); break;
+                    case 6: value = new UnityEngine.Vector2(reader.ReadSingle(), reader.ReadSingle()); break;
+                    case 7: value = new UnityEngine.Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()); break;
+                    case 8: value = new UnityEngine.Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()); break;
+                    case 9: value = reader.ReadSingle(); break;
+                    case 10: value = reader.ReadDouble(); break;
                 }
                 dict.Add(key, value);
             }

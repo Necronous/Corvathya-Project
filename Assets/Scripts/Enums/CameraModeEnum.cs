@@ -9,5 +9,4 @@ public enum CameraModeEnum
     STATIC,
     FOLLOW_PLAYER,
     CINEMATIC,
-    FADING,
 }

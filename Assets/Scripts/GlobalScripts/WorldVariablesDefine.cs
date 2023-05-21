@@ -16,6 +16,9 @@ public static class WorldVariablesDefine
         {
             { "player.lastentrance", 0 },
             { "player.lastcheckpoint", 0 },
+
+            { "currentmapindex", 1 },
+            { "newgame", true },
         };
     }
 }

@@ -34,24 +34,11 @@ public class MapTransitionHandler
         World.Player.PauseInput = true;
 
         _moveMag = (_targetEntrance.EntranceFacingDirection == DirectionEnum.RIGHT) ? -1 : 1;
-
-    }
-    private void EndMapTransition()
-    {
-        _targetEntrance = null;
-        _transitionState = 0;
-        IsTransitioning = false;
-
-        World.Instance.WorldPaused = false;
-        World.Player.PauseInput = false;
-
-        CameraController.Instance.SetState((int)CameraModeEnum.FOLLOW_PLAYER);
+        CameraController.Instance.StartFade(Color.black, _transitionTime, null, false);
     }
 
     private void Entering()
     {
-        if(_time == 0)
-            CameraController.Instance.StartFade(Color.black, _transitionTime, null, false);
         _time += Time.deltaTime;
         World.Player.MovementMagnitude = _moveMag;
         if(_time >= _transitionTime)
@@ -81,12 +68,12 @@ public class MapTransitionHandler
 
         World.Player.transform.position = _targetEntrance.transform.position;
         _transitionState++;
+        CameraController.Instance.StartFade(Color.black, _transitionTime, null, true);
+
     }
 
     private void Exiting()
     {
-        if (_time == 0)
-            CameraController.Instance.StartFade(Color.black, _transitionTime, null, true);
         _time += Time.deltaTime;
         World.Player.MovementMagnitude = _moveMag;
         if (_time >= _transitionTime)
@@ -98,5 +85,16 @@ public class MapTransitionHandler
         }
     }
 
+    private void EndMapTransition()
+    {
+        _targetEntrance = null;
+        _transitionState = 0;
+        IsTransitioning = false;
+
+        World.Instance.WorldPaused = false;
+        World.Player.PauseInput = false;
+
+        CameraController.Instance.SetPlayerFollowCamera();
+    }
 }
 
