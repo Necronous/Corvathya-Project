@@ -17,8 +17,6 @@ public class World : MonoBehaviour
     public static World Instance { get; private set; }
     public static PlayerController Player { get; private set; }
 
-    [SerializeField]
-    public GameObject PlayerPrefab;
 
     public MapTransitionHandler MapTransitionHandler { get; private set; }
     public SaveInterface SaveHandler { get; private set; }
@@ -45,19 +43,15 @@ public class World : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(this);
 
+        Application.targetFrameRate = 60;
     }
-    private void PrintWorldVariables()
-    {
-        Debug.Log("World variables...");
-        foreach(KeyValuePair<string, object> kvp in _worldVariables)
-            Debug.Log(kvp.Key + " : " + kvp.Value.ToString());
-    }
-
     private void Start()
     {
         MapTransitionHandler = new();
         SaveHandler = new();
         _worldVariables = WorldVariablesDefine.GetDefaultWorldVariables();
+        Player = transform.Find("Player").GetComponent<PlayerController>();
+        //Player.PauseInput = true;
     }
 
 
@@ -72,29 +66,29 @@ public class World : MonoBehaviour
     /// </summary>
     public void SetupGame()
     {
-        CreatePlayer();
         string mapname = GetMapNameByIndex(GetCurrentMapIndex());
         LoadMap(mapname);
         if(GetWorldVariable<bool>("newgame"))
         {
             Player.transform.position = new Vector3(-2.95f, -0.27f, -0.01f);
             SetWorldVariable("newgame", false);
-            SetWorldVariable("player.position", Player.transform.position);
+            SetWorldVariable("player.savedposition", Player.transform.position);
             SaveHandler.Save();
         }
         else
         {
-            Player.transform.position = GetWorldVariable<Vector3>("player.position");
+            Player.transform.position = GetWorldVariable<Vector3>("player.savedposition");
         }
         CameraController.Instance.SetStaticCamera();
         CameraController.Instance.SetPosition(Player.transform.position);
         CameraController.Instance.StartFade(Color.black, .5f, CameraController.Instance.SetPlayerFollowCamera, true);
+        Player.PauseInput = false;
     }
 
     public void QuitToMainMenu()
     {
         //Assume saving has been done.
-        DestroyPlayer();
+        Player.PauseInput = true;
         SceneManager.LoadScene("MainMenu");
         _worldVariables = WorldVariablesDefine.GetDefaultWorldVariables();
     }
@@ -208,24 +202,6 @@ public class World : MonoBehaviour
             return;
         SceneManager.LoadScene(mapname);
         SetWorldVariable("currentmapindex", GetMapIndexByName(mapname));
-    }
-
-    #endregion
-    #region Player
-
-    public void CreatePlayer()
-    {
-        if (Player != null)
-            return;
-        Player = Instantiate(PlayerPrefab).GetComponent<PlayerController>();
-        Player.transform.parent = transform;
-    }
-
-    public void DestroyPlayer()
-    {
-        if (Player == null)
-            return;
-        Destroy(Player);
     }
 
     #endregion

@@ -1,99 +1,56 @@
 
-
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-
-public class PlayerController : BaseEntityController
+[RequireComponent(typeof(PlayerInputHandler))]
+public partial class PlayerController : BaseEntityController
 {
-    [Header("Player_Physics")]
-    //How long we can hold the wall before we start sliding down.
-    public float WallGrabTime = .5f;
-    public float WallRunTime = .5f;
-    public (byte CurrentCount, byte MaxCount) JumpData = new(0, 2);
+    private PlayerInputHandler _inputHandler;
 
-    [Header("Player_Input")]
-    public bool JumpHeld;
-    public bool JumpPressed;
-    public bool CrouchHeld;
-    public bool GlideHeld;
+    private (byte CurrentCount, byte MaxCount, bool HighJump) _jumpData = (0, 2, false);
 
-    public bool PauseInput;
-
-    void Start()
+    public bool PauseInput
     {
-        base.InitializeEntity();
-        RegisterState((int)EntityStateEnum.IDLE, PlayerStates.Idle);
-        RegisterState((int)EntityStateEnum.MOVING, PlayerStates.Moving);
-        RegisterState((int)EntityStateEnum.CROUCHING, PlayerStates.Crouching);
-        RegisterState((int)EntityStateEnum.JUMP_TAKEOFF, PlayerStates.Jump_Takeoff);
-        RegisterState((int)EntityStateEnum.FALLING, PlayerStates.Falling);
-        RegisterState((int)EntityStateEnum.AIR_LAND, PlayerStates.Air_Land);
-        RegisterState((int)EntityStateEnum.GLIDING, PlayerStates.Glide);
-        
-        RegisterState((int)EntityStateEnum.LEDGE_HANG, PlayerStates.LedgeHang);
-        RegisterState((int)EntityStateEnum.LEDGE_CLIMB, PlayerStates.LedgeClimb);
-
-        RegisterState((int)EntityStateEnum.WALL_HANG, PlayerStates.WallHang);
-        RegisterState((int)EntityStateEnum.WALL_SLIDE, PlayerStates.WallSlide);
-        RegisterState((int)EntityStateEnum.WALL_RUN, PlayerStates.WallRun);
-        RegisterState((int)EntityStateEnum.WALL_KICK_OFF, PlayerStates.WallKickOff);
-        SetState((int)EntityStateEnum.IDLE);
-    }
-    void FixedUpdate()
-    {
-        UpdateEntity();
+        get => _inputHandler.PauseInput;
+        set => _inputHandler.PauseInput = value;
     }
 
-    #region INPUT
-    private void OnMove(InputValue val)
+    public override void Start()
+    {
+        if (World.Player != null)
+            Destroy(gameObject);
+        CameraController.Instance.SetPlayerFollowCamera();
+
+        base.Start();
+
+        _inputHandler = GetComponent<PlayerInputHandler>();
+
+        RegisterAllStates();
+        StateMachine.SetState(EntityStateEnum.IDLING);
+
+        CollisionHandler.CareAboutPreciseCollisions(true, 4, 8);
+    }
+
+    protected override void Update()
     {
         if(!PauseInput)
-            MovementMagnitude = val.Get<float>();
+            MovementMagnitude = _inputHandler.GetHorizontalMovement();
+        base.Update();
     }
-    private void OnJump(InputValue val)
+
+    private void RegisterAllStates()
     {
-        if (PauseInput)
-            return;
-
-        if ((JumpHeld || JumpPressed) && !val.isPressed)
-            JumpHeld = JumpPressed = false;
-        else
-            JumpPressed = true;
+        StateMachine.RegisterState(EntityStateEnum.IDLING, State_Idling);
+        StateMachine.RegisterState(EntityStateEnum.RUNNING, State_Running);
+        StateMachine.RegisterState(EntityStateEnum.SLIDING, State_Sliding);
+        StateMachine.RegisterState(EntityStateEnum.HARD_TURNING, State_Turning);
+        StateMachine.RegisterState(EntityStateEnum.CROUCHING, State_Crouching);
+        StateMachine.RegisterState(EntityStateEnum.JUMP_TAKINGOFF, State_JumpTakingOff);
+        StateMachine.RegisterState(EntityStateEnum.JUMP_LANDING, State_JumpLanding);
+        StateMachine.RegisterState(EntityStateEnum.DODGING, State_Dodge);
+        
+        StateMachine.RegisterState(EntityStateEnum.FALLING, State_Falling);
+        StateMachine.RegisterState(EntityStateEnum.GLIDING, State_Gliding);
+        StateMachine.RegisterState(EntityStateEnum.JUMPING, State_Jumping);
+        StateMachine.RegisterState(EntityStateEnum.JUMP_APEX, State_JumpApex);
     }
-    private void OnCrouch(InputValue val)
-    {
-        if (PauseInput)
-            return;
-
-        if (CrouchHeld && !val.isPressed)
-            CrouchHeld = false;
-        else
-            CrouchHeld = true;
-    }
-    private void OnGlide(InputValue val)
-    {
-        if (PauseInput)
-            return;
-
-        if (!val.isPressed)
-            GlideHeld = false;
-        else
-            GlideHeld = true;
-    }
-
-    private void OnActivate(InputValue val)
-    {
-        if (PauseInput)
-            return;
-
-        if(!val.isPressed)
-        {
-            
-        }
-    }
-    #endregion
-
-
 }

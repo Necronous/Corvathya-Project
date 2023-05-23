@@ -3,13 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class StateMachine
+public class StateMachine<T>
 {
-    private Dictionary<int, Func<bool>> _states = new();
+    private Dictionary<T, Func<bool>> _states = new();
     private Func<bool> _activeState;
 
-    public int CurrentState { get; private set; }
-    public int LastState { get; private set; }
+    public T CurrentState { get; private set; }
+    public T LastState { get; private set; }
     public float CurrentStateTime { get; private set; }
     public float LastStateTime { get; private set; }
 
@@ -39,7 +39,7 @@ public class StateMachine
     /// </summary>
     /// <param name="id">ID of the state.</param>
     /// <returns></returns>
-    public bool HasState(int id) => _states.ContainsKey(id);
+    public bool HasState(T id) => _states.ContainsKey(id);
 
 
     /// <summary>
@@ -48,7 +48,7 @@ public class StateMachine
     /// <param name="state">Id of the state.</param>
     /// <param name="fun">Function to use.</param>
     /// <returns></returns>
-    public bool RegisterState(int id, Func<bool> function, bool replace = false)
+    public bool RegisterState(T id, Func<bool> function, bool replace = false)
     {
         if (HasState(id))
         {
@@ -65,7 +65,7 @@ public class StateMachine
     /// Removes a state from the machine if it exists.
     /// </summary>
     /// <param name="id">ID of the state to remove.</param>
-    public bool DeRegisterState(int id)
+    public bool DeRegisterState(T id)
     {
         if (HasState(id))
         {
@@ -80,7 +80,7 @@ public class StateMachine
     /// </summary>
     /// <param name="id">ID of the state to set active.</param>
     /// <returns>Returns false if state does not exist.</returns>
-    public bool SetState(int id)
+    public bool SetState(T id)
     {
         if (!HasState(id))
             return false;

@@ -12,12 +12,14 @@ using UnityEngine.Rendering;
 /// A base class for Entities.
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(EntityCollision))]
 public abstract class BaseEntityController : MonoBehaviour
 {
-    protected StateMachine<BaseEntityController> _stateMachine;
-    protected Rigidbody2D _rigidBody;
+    protected Rigidbody2D RigidBody;
 
-    public BoxCollider2D BoundingBox { get; private set; }
+    public StateMachine<EntityStateEnum> StateMachine { get; protected set; }
+    public Animator Animator { get; protected set; }
+    public EntityCollision CollisionHandler { get; protected set; }
 
     [Header("Base_Physics")]
     public Vector2 Velocity;
@@ -26,28 +28,19 @@ public abstract class BaseEntityController : MonoBehaviour
     public float Deceleration = .5f;
     public float JumpForce = 15f;
     public float GravityForce = .9f;
-    public bool isPushable = true;
-
+    public float MaxFallSpeed = -20f;
 
     [Header("Base_Input")]
     public float MovementMagnitude;
-    public bool isAttacking;
-    public bool NearLedgeLeft;
-    public bool NearLedgeRight;
 
-    [Header("Base_Misc")]
+    [Header("Base_Detection")]
     public float ViewDistance = 8f;
 
+    public bool OnCeiling => CollisionHandler.UpCollision;
+    public bool OnGround => CollisionHandler.DownCollision;
+    public bool OnLeftWall => CollisionHandler.LeftCollision;
+    public bool OnRightWall => CollisionHandler.RightCollision;
 
-    public bool OnGround => _baseCollisionInfo[(int)DirectionEnum.DOWN].collision;
-    
-    private List<MapArea> _areaModifiers = new();
-    private Animator _animator;
-
-    /// <summary>
-    /// Get or sets the entities facing direction.
-    /// 1 = right, 2 = left, 0 = Flip
-    /// </summary>
     public float FacingDirection
     {
         get => Mathf.Clamp(transform.localScale.x, -1, 1);
@@ -62,217 +55,43 @@ public abstract class BaseEntityController : MonoBehaviour
             transform.localScale = new(value, transform.localScale.y);
         }
     }
-    
-    
-    #region StateMachinePassThrough
-    public int CurrentState => _stateMachine.CurrentState;
-    public int LastState => _stateMachine.LastState;
-    public float CurrentStateTime => _stateMachine.CurrentStateTime;
-    public float LastStateTime => _stateMachine.LastStateTime;
-    public bool SetState(int state) => _stateMachine.SetState(state);
 
-    public bool HasState(int state) => _stateMachine.HasState(state);
-
-    public bool DeRegisterState(int state) => _stateMachine.DeRegisterState(state);
-
-    public bool RegisterState(int state, Func<BaseEntityController, bool> fun) => _stateMachine.RegisterState(state, fun);
-
-    #endregion
-
-    #region Collision.
-    private (bool collision, Collider2D collider)[] _baseCollisionInfo;
-
-    private void UpdateCollisions()
-    {
-        ContactPoint2D[] contacts = new ContactPoint2D[16];
-        int contactCount = BoundingBox.GetContacts(contacts);
-        for (int i = 0; i < 4; i++)
-        {
-            _baseCollisionInfo[i] = (false, null);
-        }
-
-        //Get basic info first.
-        for (int i = 0; i < contactCount; i++)
-        {
-            if (contacts[i].collider.isTrigger || contacts[i].collider.gameObject.layer == 1 << 7)
-                continue;
-            Vector3 normal = contacts[i].normal;
-            Collider2D collider = contacts[i].collider;
-            if (Mathf.Abs(normal.x) > Mathf.Abs(normal.y))
-            {
-                if (normal.x > 0)
-                    _baseCollisionInfo[(int)DirectionEnum.LEFT] = (true, collider);
-                else
-                    _baseCollisionInfo[(int)DirectionEnum.RIGHT] = (true, collider);
-            }
-            else
-            {
-                if (normal.y > 0)
-                    _baseCollisionInfo[(int)DirectionEnum.DOWN] = (true, collider);
-                else
-                    _baseCollisionInfo[(int)DirectionEnum.UP] = (true, collider);
-            }
-        }
-
-    }
-    /// <summary>
-    /// get more precise collision from specified side.
-    /// Start and end are for checking collision on a certain part must be between 0f - 1f where 1f is height of player and 0 is bottom.
-    /// IE start = 0, end = 0.5f will only check and return collision start from the player bottom to halfway up.
-    /// </summary>
-    /// <param name="dir">Direction to check</param>
-    /// <param name="resolution">Resolution</param>
-    /// <param name="start">Where to start</param>
-    /// <param name="end">Where to end</param>
-    /// <returns></returns>
-    public bool[] GetPreciseCollisionsHorizontal(DirectionEnum dir, int resolution, float start = 0, float end = 0, int layermask = 1 << 7)
-        => GetPreciseCollisionsHorizontal(dir == DirectionEnum.LEFT ? -1 : 1, resolution, layermask);
-    /// <summary>
-    /// get more precise collision from specified side.
-    /// Start and end are for checking collision on a certain part must be between 0f - 1f where 1f is height of player and 0 is bottom.
-    /// IE start = 0, end = 0.5f will only check and return collision start from the player bottom to halfway up.
-    /// </summary>
-    /// <param name="dir">Direction to check</param>
-    /// <param name="resolution">Resolution</param>
-    /// <param name="start">Where to start</param>
-    /// <param name="end">Where to end</param>
-    /// <returns></returns>
-    public bool[] GetPreciseCollisionsHorizontal(float dir, int resolution, float start = 0, float end = 1f, int layermask = 1 << 7)
-    {
-        bool[] cols = new bool[resolution];
-        GetPreciseCollisionsHorizontal(dir,cols , start, end, layermask);
-        return cols;
-    }
-    /// <summary>
-    /// get more precise collision from specified side.
-    /// Start and end are for checking collision on a certain part must be between 0f - 1f where 1f is height of player and 0 is bottom.
-    /// IE start = 0, end = 0.5f will only check and return collision start from the player bottom to halfway up.
-    /// </summary>
-    /// <param name="dir">Direction to check</param>
-    /// <param name="resolution">Resolution</param>
-    /// <param name="start">Where to start</param>
-    /// <param name="end">Where to end</param>
-    /// <param name="array">Array of bools to retrieve results.</param>
-    public void GetPreciseCollisionsHorizontal(float dir, bool[] array, float start = 0, float end = 1f, int layermask = 1 << 7)
-    {
-        start = Mathf.Clamp(Mathf.Min(start, end), 0f, 1f);
-        end = Mathf.Clamp(Mathf.Max(start, end), 0f, 1f);
-
-        if (start == end)
-        {
-            array = null;
-            return;
-        }
-        float resolution = array.Length;
-        float startY = BoundingBox.size.y * start;
-        float endY = BoundingBox.size.y * end;
-
-        float xOffset = transform.position.x + ((BoundingBox.size.x / 2) * dir);
-        float boxHeight = (endY - startY) / resolution;
-        
-        for (int i = 0; i < resolution; i++)
-        {
-            Vector2 boxStart = new(
-                xOffset,
-                transform.position.y + startY + (i * boxHeight)
-                );
-            Vector2 boxEnd = boxStart + new Vector2(.1f * dir, boxHeight);
-            array[i] = Physics2D.OverlapArea(boxStart, boxEnd, layermask); //Only check SOLID layer for now.
-        }
-
-        return;
-    }
-
-    /// <summary>
-    /// Check if there is a collision in the specified direction.
-    /// </summary>
-    /// <param name="dir">Direction to check.</param>
-    /// <returns>True if there is a collision, else false.</returns>
-    public bool IsCollision(DirectionEnum dir)
-        => _baseCollisionInfo[(int)dir].collision;
-
-    /// <summary>
-    /// Check if there is a collision in the specified direction.
-    /// </summary>
-    /// <param name="dir">Direction to check.</param>
-    /// <returns>True if there is a collision, else false.</returns>
-    public bool IsCollision(float dir)
-        => IsCollision(dir > 0 ? DirectionEnum.RIGHT : DirectionEnum.LEFT);
-    /// <summary>
-    /// Returns the object the entity has collided with in the specified direction.
-    /// </summary>
-    /// <param name="dir">Direction to check.</param>
-    /// <returns>The object the entitiy collided with or null if no collision.</returns>
-    public Collider2D GetCollision(DirectionEnum dir)
-        => IsCollision(dir) ? _baseCollisionInfo[(int)dir].collider : null;
-    /// <summary>
-    /// Returns the object the entity has collided with in the specified direction.
-    /// </summary>
-    /// <param name="dir">Direction to check.</param>
-    /// <returns>The object the entitiy collided with or null if no collision.</returns>
-    public Collider2D GetCollision(float dir)
-        => GetCollision(dir > 0 ? DirectionEnum.RIGHT : DirectionEnum.LEFT);
-
-
-    #endregion
-
-    #region Animation
-
-    public void PlayAnimation(string name)
-    {
-        _animator.Play("Base Layer." + name);
-    }
-
-    #endregion
-    protected void InitializeEntity()
+    public virtual void Start()
     {
         if (GetType() != typeof(PlayerController))
             World.Instance.AddEntity(this);
         
-        _animator = transform.Find("Sprite").GetComponent<Animator>();
-        _stateMachine = new();
-        _rigidBody = GetComponent<Rigidbody2D>();
-        BoundingBox = GetComponent<BoxCollider2D>();
-        _baseCollisionInfo = new (bool collision, Collider2D collider)[4];
+        StateMachine = new();
+        RigidBody = GetComponent<Rigidbody2D>();
+        Animator = transform.Find("Sprite").GetComponent<Animator>();
+        CollisionHandler = GetComponent<EntityCollision>();
 
     }
-
-    protected void UpdateEntity()
+    /* 
+     * Because the statemachine does input and physics
+     * it does not belong in either Update or FixedUpdate.
+     * If its done in update the physics get screwed up
+     * and if its done in fixedupdate the input get screwed.
+     * 
+     * As a temporary fix ive set the physics update rate and the target framerate to 60fps
+     * to help sync them both up. This seems to work fine but its not ideal.
+     * 
+     * Todo: Find a better solution.
+     */
+    protected virtual void Update()
     {
-        UpdateCollisions();
-
-        //Check for ledges
-        float xDistanceFromOrigin = BoundingBox.size.x / 2 + .2f;
-        float distanceToCheck = 0.2f;   
-        //change the xoffset based on velocity? 
-
-        Vector2 leftCheck = new Vector2(transform.position.x - xDistanceFromOrigin, transform.position.y);
-        Vector2 rightCheck = new Vector2(transform.position.x + xDistanceFromOrigin, transform.position.y);
-
-        NearLedgeLeft = !Physics2D.Linecast(leftCheck, leftCheck - ( Vector2.up * distanceToCheck), 1 << 7);
-        NearLedgeRight = !Physics2D.Linecast(rightCheck, rightCheck - ( Vector2.up * distanceToCheck), 1 << 7);
-
-        _stateMachine.UpdateMachine(this);
-        _rigidBody.velocity = Velocity;
+        if (MovementMagnitude != 0)
+            FacingDirection = MovementMagnitude;
+        StateMachine.UpdateMachine();
     }
-
-    private void OnTriggerEnter2D(Collider2D collision)
+    protected virtual void FixedUpdate()
     {
-        MapArea area = collision.GetComponent<MapArea>();
-        if (area != null)
-            _areaModifiers.Add(area);
-    }
-
-    private void OnTriggerExit2D(Collider2D collision)
-    {
-        MapArea area = collision.GetComponent<MapArea>();
-        if (area != null)
-            _areaModifiers.Remove(area);
+        RigidBody.velocity = Velocity;
     }
 
     public void SetPosition(Vector2 position)
     {
-        _rigidBody.MovePosition(position);
+        RigidBody.MovePosition(position);
     }
 
     /// <summary>
@@ -298,32 +117,5 @@ public abstract class BaseEntityController : MonoBehaviour
             || (distance > 0 && FacingDirection == -1))
             return false;
         return true;
-    }
-
-    /// <summary>
-    /// Gets if the entity can push a colliding entity.
-    /// </summary>
-    /// <param name="dir">Direction of collision to check.</param>
-    /// <returns>False if colliding object is not and entity or is not pushable, True otherwise.</returns>
-    public bool CanBePushed(DirectionEnum dir)
-    {
-        
-        Collider2D collision = _baseCollisionInfo[(int)dir].collider;
-        BaseEntityController target = collision.GetComponent<BaseEntityController>();
-        return target != null ? target.isPushable : false;
-    }
-
-    
-    /// <summary>
-    /// Check if the entity is current effected by an area modifier.
-    /// </summary>
-    /// <param name="mod">The modifier to check for.</param>
-    /// <returns>True if the entity is effected by the modifier, false otherwise.</returns>
-    public bool HasAreaModifier(AreaModifierEnum mod)
-    {
-        foreach(MapArea area in _areaModifiers)
-            if(area.HasModifier(mod))
-                return true;
-        return false;
     }
 }
