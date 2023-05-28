@@ -1,6 +1,6 @@
 ﻿using System;
 
-public enum DirectionEnum
+public enum Direction
 {
     UP = 0,
     DOWN,

@@ -33,7 +33,7 @@ public class MapTransitionHandler
         World.Instance.WorldPaused = true;
         World.Player.PauseInput = true;
 
-        _moveMag = (_targetEntrance.EntranceFacingDirection == DirectionEnum.RIGHT) ? -1 : 1;
+        _moveMag = (_targetEntrance.EntranceFacingDirection == Direction.RIGHT) ? -1 : 1;
         CameraController.Instance.StartFade(Color.black, _transitionTime, null, false);
     }
 
@@ -64,7 +64,7 @@ public class MapTransitionHandler
             _targetEntrance = World.Instance.GetEntrance(targetEntry);
         World.Instance.SetWorldVariable("player.lastentrance", World.Instance.GetEntranceIndex(_targetEntrance));
 
-        _moveMag = (_targetEntrance.EntranceFacingDirection == DirectionEnum.RIGHT) ? 1 : -1;
+        _moveMag = (_targetEntrance.EntranceFacingDirection == Direction.RIGHT) ? 1 : -1;
 
         World.Player.transform.position = _targetEntrance.transform.position;
         _transitionState++;

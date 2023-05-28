@@ -1,4 +1,6 @@
 
+#define ENTITYCOLLISION_DEBUG
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -15,6 +17,13 @@ public class EntityCollision : MonoBehaviour
     public const int RIGHT = 3;
 
     private BoxCollider2D Collider;
+
+    public float Width => Collider.size.x;
+    public float Height => Collider.size.y;
+    public float HalfWidth => Width / 2;
+    public float HalfHeight => Height / 2;
+
+    public Vector2 Size => Collider.size;
 
     private (bool Collision, Collider2D Collider)[] _baseCollisionInfo;
 
@@ -77,16 +86,65 @@ public class EntityCollision : MonoBehaviour
         _rightCollisionInfo = new (bool Collision, Collider2D Collider)[horizontalres];
     }
 
-    public void SetAllCollisionLayers(int layers)
-        => _layersToCheck = layers;
-    public void SetCollisionLayer(int layer, bool set = true)
+    public RaycastHit2D Linecast(Vector2 start, Vector2 end)
+        => Linecast(start, end, _layersToCheck);
+    public RaycastHit2D Linecast(Vector2 start, Vector2 end, int layermask)
     {
-        if(!set)
-            _layersToCheck &= ~(1 << layer);
+        RaycastHit2D hit = Physics2D.Linecast(start, end, layermask);
+#if ENTITYCOLLISION_DEBUG
+        if(hit)
+            Debug.DrawLine(start, end, Color.red);
         else
-            _layersToCheck |= (1 << layer);
+            Debug.DrawLine(start, end, Color.green);
+#endif
+        return hit;
     }
-    public bool HasCollisionLayer(int layer)
+
+    public Collider2D OverlapArea(Vector2 start, Vector2 end)
+        => OverlapArea(start, end, _layersToCheck);
+    public Collider2D OverlapArea(Vector2 start, Vector2 end, int layermask)
+    {
+        Collider2D col = Physics2D.OverlapArea(start, end, layermask);
+#if ENTITYCOLLISION_DEBUG
+        if (col)
+            DebugExtensions.DrawBox(start, end, Color.red);
+        else
+            DebugExtensions.DrawBox(start, end, Color.green);
+#endif
+        return col;
+    }
+    
+    /// <summary>
+    /// Moves the collider to position, Checks for collisions then moves the collider back.
+    /// </summary>
+    /// <param name="position">Position to check.</param>
+    /// <returns></returns>
+    public Collider2D Cast(Vector2 position)
+        => Cast(position, _layersToCheck);
+    /// <summary>
+    /// Moves the collider to position, Checks for collisions then moves the collider back.
+    /// </summary>
+    /// <param name="position">Position to check.</param>
+    /// <param name="layermask">Layers to check.</param>
+    /// <returns></returns>
+    public Collider2D Cast(Vector2 position, int layermask)
+    {
+        Vector2 start = new Vector2(position.x - HalfWidth, position.y);
+        Vector2 end = new Vector2(position.x + HalfWidth, position.y + Height);
+
+        Collider2D col = Physics2D.OverlapArea(start, end, layermask);
+
+#if ENTITYCOLLISION_DEBUG
+        if (col)
+            DebugExtensions.DrawBox(start, end, Color.red);
+        else
+            DebugExtensions.DrawBox(start, end, Color.green);
+#endif
+
+        return col;
+    }
+
+    public bool CollidesWithLayer(int layer)
         => (_layersToCheck & (1 << layer)) == (1 << layer);
 
     private void Start()
@@ -95,7 +153,7 @@ public class EntityCollision : MonoBehaviour
         _baseCollisionInfo = new (bool collision, Collider2D collider)[4];
         
         int currentlayer = gameObject.layer;
-        SetAllCollisionLayers(Physics2D.GetLayerCollisionMask(currentlayer));
+        _layersToCheck = Physics2D.GetLayerCollisionMask(currentlayer);
     }
 
     private void FixedUpdate()
@@ -117,8 +175,7 @@ public class EntityCollision : MonoBehaviour
 
         for (int i = 0; i < contactCount; i++)
         {
-            //If its a trigger or it is not on the "Solid" layer, ignore it.
-            if (_collisionContacts[i].collider.isTrigger || _collisionContacts[i].collider.gameObject.layer == 1 << 7)
+            if (_collisionContacts[i].collider.isTrigger || !CollidesWithLayer(_collisionContacts[i].collider.gameObject.layer))
                 continue;
 
             Vector3 normal = _collisionContacts[i].normal;
@@ -146,7 +203,7 @@ public class EntityCollision : MonoBehaviour
     private void UpdatePreciseCollisions()
     {
         if (UpCollision) UpdatePreciseCollisionsVertical(1f);
-        if(DownCollision) UpdatePreciseCollisionsVertical(-1f);
+        if (DownCollision) UpdatePreciseCollisionsVertical(-1f);
         if (LeftCollision) UpdatePreciseCollisionsHorizontal(-1f);
         if (RightCollision) UpdatePreciseCollisionsHorizontal(1f);
     }
@@ -154,15 +211,15 @@ public class EntityCollision : MonoBehaviour
     private void UpdatePreciseCollisionsVertical(float dir)
     {
         /*
-         * I could probably optimise this by only checking against colliders in Collider.GetContacts()
+         * Could probably optimise this by only checking against colliders in Collider.GetContacts()
          */
 
         float yOffset = transform.position.y;
         if(dir > 0)
-            yOffset = transform.position.y + (Collider.size.y);
+            yOffset = transform.position.y + Height;
         
-        float boxWidth = Collider.size.x / _verticalCollisionResolution;
-        float xOffset = transform.position.x - (Collider.size.x / 2);
+        float boxWidth = Width / _verticalCollisionResolution;
+        float xOffset = transform.position.x - HalfWidth;
 
         for (int i = 0; i < _verticalCollisionResolution; i++)
         {
@@ -171,19 +228,26 @@ public class EntityCollision : MonoBehaviour
                 yOffset
                 );
             Vector2 boxEnd = boxStart + new Vector2(boxWidth, .1f * dir);
-            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, 1 << 7);
+            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, _layersToCheck);
 
             if (dir > 0)
                 _upCollisionInfo[i] = (col != null, col);
             else
                 _downCollisionInfo[i] = (col != null, col);
+
+#if ENTITYCOLLISION_DEBUG
+            if (col)
+                Debug.DrawLine(boxStart, boxEnd, Color.red);
+            else
+                Debug.DrawLine(boxStart, boxEnd, Color.green);
+#endif
         }
     }
 
     private void UpdatePreciseCollisionsHorizontal(float dir)
     {
-        float xOffset = transform.position.x + ((Collider.size.x / 2) * dir);
-        float boxHeight = Collider.size.y / _horizontalCollisionResolution;
+        float xOffset = transform.position.x + HalfWidth * dir;
+        float boxHeight = Height / _horizontalCollisionResolution;
 
         for (int i = 0; i < _horizontalCollisionResolution; i++)
         {
@@ -192,12 +256,19 @@ public class EntityCollision : MonoBehaviour
                 transform.position.y + (i * boxHeight)
                 );
             Vector2 boxEnd = boxStart + new Vector2(.1f * dir, boxHeight);
-            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, 1 << 7);
+            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, _layersToCheck);
 
             if (dir > 0)
                 _rightCollisionInfo[i] = (col != null, col);
             else
                 _leftCollisionInfo[i] = (col != null, col);
+
+#if ENTITYCOLLISION_DEBUG
+            if (col)
+                Debug.DrawLine(boxStart, boxEnd, Color.red);
+            else
+                Debug.DrawLine(boxStart, boxEnd, Color.green);
+#endif
         }
 
     }

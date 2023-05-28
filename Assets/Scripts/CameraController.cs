@@ -14,7 +14,7 @@ public class CameraController : MonoBehaviour
     private AnimationCurve _fadeCurve = new(new Keyframe(0, 1), new Keyframe(0.6f, 0.7f, -1.8f, -1.2f), new Keyframe(.5f, 0));
     #endregion
 
-    public CameraModeEnum CameraMode;// { get; private set; }
+    public CameraMode CameraMode;// { get; private set; }
     public bool IsFading;
 
     private void Awake()
@@ -28,13 +28,13 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         _fadeTexture = new Texture2D(1, 1);
-        SetMode(CameraModeEnum.STATIC);
+        SetMode(CameraMode.STATIC);
     }
 
-    public void SetStaticCamera() => SetMode(CameraModeEnum.STATIC);
-    public void SetPlayerFollowCamera() => SetMode(CameraModeEnum.FOLLOW_PLAYER);
-    public void SetCinematicCamera() => SetMode(CameraModeEnum.CINEMATIC);
-    public void SetMode(CameraModeEnum mode)
+    public void SetStaticCamera() => SetMode(CameraMode.STATIC);
+    public void SetPlayerFollowCamera() => SetMode(CameraMode.FOLLOW_PLAYER);
+    public void SetCinematicCamera() => SetMode(CameraMode.CINEMATIC);
+    public void SetMode(CameraMode mode)
     {
         if (CameraMode == mode)
             return;
@@ -45,9 +45,9 @@ public class CameraController : MonoBehaviour
     {
         switch (CameraMode)
         {
-            case CameraModeEnum.STATIC: UpdateStaticCamera(); break;
-            case CameraModeEnum.FOLLOW_PLAYER: UpdateFollowCamera(); break;
-            case CameraModeEnum.CINEMATIC: break;
+            case CameraMode.STATIC: UpdateStaticCamera(); break;
+            case CameraMode.FOLLOW_PLAYER: UpdateFollowCamera(); break;
+            case CameraMode.CINEMATIC: break;
         }
         if (IsFading)
             UpdateFading();

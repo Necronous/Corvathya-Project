@@ -11,7 +11,7 @@ public class MapEntrance : MonoBehaviour
     [SerializeField]
     public string TargetMapEntranceName = "";
     [SerializeField]
-    public DirectionEnum EntranceFacingDirection = DirectionEnum.RIGHT;
+    public Direction EntranceFacingDirection = Direction.RIGHT;
 
 
     void OnEnable()

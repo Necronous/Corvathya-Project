@@ -1,46 +1,45 @@
 ﻿
 
 using System;
-using TMPro;
 using UnityEngine;
 
 public partial class PlayerController
 {
-    private bool CheckCommonGroundCancels()
+    private bool State_CommonGroundCancels()
     {
         if(!OnGround)
-        { StateMachine.SetState(EntityStateEnum.FALLING); return true; }
+        { StateMachine.SetState(EntityState.FALLING); return true; }
         
         if (_inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED
             || _inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_DOWN)
-        { StateMachine.SetState(EntityStateEnum.JUMP_TAKINGOFF); return true; }
+        { StateMachine.SetState(EntityState.JUMP_TAKINGOFF); return true; }
         
         return false;
     }
     private bool State_Idling()
     {
-        if (CheckCommonGroundCancels())
+        if (State_CommonGroundCancels())
             return false;
 
         if (MovementMagnitude != 0)
-        { StateMachine.SetState(EntityStateEnum.RUNNING); return false; }
+        { StateMachine.SetState(EntityState.RUNNING); return false; }
         if (Velocity.x != 0)
-        { StateMachine.SetState(EntityStateEnum.SLIDING); return false; }
+        { StateMachine.SetState(EntityState.SLIDING); return false; }
         if (_inputHandler.GetVerticalMovement() < 0)
-        { StateMachine.SetState(EntityStateEnum.CROUCHING); return false; }
+        { StateMachine.SetState(EntityState.CROUCHING); return false; }
 
         Animator.Play("Idle");
         return true;
     }
     private bool State_Running()
     {
-        if (CheckCommonGroundCancels())
+        if (State_CommonGroundCancels())
             return false;
 
         if (MovementMagnitude == 0)
-        { StateMachine.SetState(EntityStateEnum.IDLING); return false; }
+        { StateMachine.SetState(EntityState.IDLING); return false; }
         if (_inputHandler.GetVerticalMovement() < 0)
-        { StateMachine.SetState(EntityStateEnum.CROUCHING); return false; }
+        { StateMachine.SetState(EntityState.CROUCHING); return false; }
 
         float targetSpeed = MovementMagnitude * MaxSpeed;
         Velocity.x = Mathf.MoveTowards(Velocity.x, targetSpeed, Acceleration);
@@ -50,19 +49,24 @@ public partial class PlayerController
 
         Animator.Play("Running");
 
+        if (MovementMagnitude > 0)
+            FacingDirection = 1;
+        if (MovementMagnitude < 0)
+            FacingDirection = -1;
+
         return true;
     }
     private bool State_Sliding()
     {
-        if (CheckCommonGroundCancels())
+        if (State_CommonGroundCancels())
             return false;
 
         if(MovementMagnitude !=  0)
-        { StateMachine.SetState(EntityStateEnum.RUNNING); return false; }
+        { StateMachine.SetState(EntityState.RUNNING); return false; }
         if (Velocity.x == 0)
-        { StateMachine.SetState(EntityStateEnum.IDLING); return false; }
+        { StateMachine.SetState(EntityState.IDLING); return false; }
         if (_inputHandler.GetVerticalMovement() < 0)
-        { StateMachine.SetState(EntityStateEnum.CROUCHING); return false; }
+        { StateMachine.SetState(EntityState.CROUCHING); return false; }
 
         Velocity.x = Mathf.MoveTowards(Velocity.x, 0, Deceleration);
 
@@ -77,7 +81,7 @@ public partial class PlayerController
     private bool State_Crouching()
     {
         if (_inputHandler.GetVerticalMovement() >= 0)
-        { StateMachine.SetState(EntityStateEnum.IDLING); return false; }
+        { StateMachine.SetState(EntityState.IDLING); return false; }
 
         //Decelerate faster
         Velocity.x = Mathf.MoveTowards(Velocity.x, 0, Deceleration * 1.3f);
@@ -93,7 +97,7 @@ public partial class PlayerController
         //Flicker animation
 
         Velocity.y = JumpForce;
-        StateMachine.SetState(EntityStateEnum.JUMPING);
+        StateMachine.SetState(EntityState.JUMPING);
 
         return true;
     }
@@ -104,7 +108,7 @@ public partial class PlayerController
 
         //Flicker animation
 
-        StateMachine.SetState(EntityStateEnum.IDLING);
+        StateMachine.SetState(EntityState.IDLING);
 
         return true;
     }

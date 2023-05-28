@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-public enum EntityStateEnum
+public enum EntityState
 {
     //Common
     IDLING,
@@ -17,10 +17,11 @@ public enum EntityStateEnum
     JUMPING,
     JUMP_APEX,
 
+
     //Player specific
     GLIDING,
 
-    LEDGE_HANGING,
+    LEDGE_GRABBING,
     LEDGE_CLIMBING,
 
     WALL_HANGING,
@@ -28,5 +29,7 @@ public enum EntityStateEnum
     WALL_SLIDING, 
     WALL_JUMPING,
 
+    LIGHT_ATTACK,
+    HEAVY_ATTACK,
     //EnemySpecific
 }

@@ -13,13 +13,15 @@ using UnityEngine.Rendering;
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(EntityCollision))]
+[RequireComponent(typeof(EntityHealthComponent))]
 public abstract class BaseEntityController : MonoBehaviour
 {
     protected Rigidbody2D RigidBody;
 
-    public StateMachine<EntityStateEnum> StateMachine { get; protected set; }
+    public StateMachine<EntityState> StateMachine { get; protected set; }
     public Animator Animator { get; protected set; }
     public EntityCollision CollisionHandler { get; protected set; }
+    public EntityHealthComponent HealthHandler { get; protected set; }
 
     [Header("Base_Physics")]
     public Vector2 Velocity;
@@ -65,7 +67,10 @@ public abstract class BaseEntityController : MonoBehaviour
         RigidBody = GetComponent<Rigidbody2D>();
         Animator = transform.Find("Sprite").GetComponent<Animator>();
         CollisionHandler = GetComponent<EntityCollision>();
+        HealthHandler = GetComponent<EntityHealthComponent>();
 
+        HealthHandler.OnDeath += OnDeathCallback;
+        HealthHandler.OnDamage += OnDamageCallback;
     }
     /* 
      * Because the statemachine does input and physics
@@ -80,14 +85,16 @@ public abstract class BaseEntityController : MonoBehaviour
      */
     protected virtual void Update()
     {
-        if (MovementMagnitude != 0)
-            FacingDirection = MovementMagnitude;
         StateMachine.UpdateMachine();
     }
     protected virtual void FixedUpdate()
     {
         RigidBody.velocity = Velocity;
     }
+    protected virtual void OnDamageCallback(MonoBehaviour source, int damage)
+    { }
+    protected virtual void OnDeathCallback(MonoBehaviour source)
+    { }
 
     public void SetPosition(Vector2 position)
     {

@@ -7,16 +7,16 @@ using UnityEngine;
 public class MapArea : MonoBehaviour
 {
     [SerializeField] 
-    public List<AreaModifierEnum> Modifiers = new List<AreaModifierEnum>();
+    public List<AreaModifier> Modifiers = new List<AreaModifier>();
 
-    public bool HasModifier(AreaModifierEnum mod) => Modifiers.Contains(mod);
-    public void AddModifier(AreaModifierEnum mod)
+    public bool HasModifier(AreaModifier mod) => Modifiers.Contains(mod);
+    public void AddModifier(AreaModifier mod)
     {
         if (HasModifier(mod))
             return;
         Modifiers.Add(mod);
     }
-    public void RemoveModifier(AreaModifierEnum mod)
+    public void RemoveModifier(AreaModifier mod)
     {
         if (!HasModifier(mod))
             return;

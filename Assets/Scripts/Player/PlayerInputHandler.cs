@@ -1,15 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.InputSystem.Users;
 
 public class PlayerInputHandler : MonoBehaviour
 {
-    /*
-     * Convert const to public enums.
-     */
     public const int KEY_UP = 0;
     public const int KEY_PRESSED = 1;
     public const int KEY_DOWN = 2;
@@ -47,6 +42,21 @@ public class PlayerInputHandler : MonoBehaviour
         _lightAttack = _input.actions["LightAttack"];
         _heavyAttack = _input.actions["HeavyAttack"];
         _states = new int[4];
+        InputUser.onChange += ControlSchemeChangeCallback;
+    }
+
+    private void ControlSchemeChangeCallback(InputUser inputUser, InputUserChange userChange, InputDevice device)
+    {
+        if (device == null)
+            return;
+        if(device is UnityEngine.InputSystem.Switch.SwitchProControllerHID spro)
+        { }
+        if (device is UnityEngine.InputSystem.DualShock.DualShockGamepad ps)
+        { }
+        if (device is UnityEngine.InputSystem.XInput.XInputController xbox)
+        { }
+        if(device is UnityEngine.InputSystem.Keyboard keyboard)
+        { }
     }
 
     void Update()
@@ -65,6 +75,16 @@ public class PlayerInputHandler : MonoBehaviour
             return KEY_UP;
         return _states[key];
     }
+
+    public bool KeyPressed(int key)
+        => _states[key] == KEY_PRESSED;
+    public bool KeyDown(int key)
+        => _states[key] == KEY_PRESSED || _states[key] == KEY_DOWN;
+    public bool KeyReleased(int key)
+        => _states[key] == KEY_RELEASED;
+    public bool KeyUp(int key)
+        => _states[key] == KEY_RELEASED || _states[key] == KEY_UP;
+
     public float GetHorizontalMovement()
         => PauseInput ? 0 : _horizontalInput;
     public float GetVerticalMovement()

@@ -28,7 +28,7 @@ public class StateMachine<T>
             maxloopcount++;
             if (maxloopcount == 100)
             {
-                throw new Exception("EntityMachine.cs Max loop limit reached!");
+                throw new Exception($"EntityMachine.cs Max loop limit reached! State: {CurrentState} LastState: {LastState}");
             }
 #endif
         }

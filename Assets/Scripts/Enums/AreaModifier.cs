@@ -1,7 +1,7 @@
 ﻿using System;
 
 
-public enum AreaModifierEnum
+public enum AreaModifier
 {
     NONE,
     NO_LEDGE_GRAB,
