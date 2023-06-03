@@ -3,28 +3,37 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-public class SaveInterface
+public class SaveManager
 {
-    public readonly string SaveDirectory;
+    #region Singleton
 
-    private SaveFile[] _allSaves;
+    public static SaveManager Instance { get; private set; }
+
+    public static void Create()
+    {
+        if (Instance != null)
+            return;
+        Instance = new SaveManager();
+        Instance.Initialize();
+    }
+
+    private SaveManager() { }
+
+    #endregion
+
+    private string SaveDirectory;
+
     private SaveFile _activeSave;
 
-    public SaveFile[] AllSaves => _allSaves;
-    public SaveFile ActiveSave => _activeSave;
+    public static SaveFile GetActiveSave() => Instance._activeSave;
 
-    public SaveInterface()
+    private void Initialize()
     {
         SaveDirectory = Path.Combine(Application.persistentDataPath, "Saves");
         Debug.Log("save directory: " + SaveDirectory);
         if(!Directory.Exists(SaveDirectory))
             Directory.CreateDirectory(SaveDirectory);
         LoadAllSaves();
-    }
-
-    public void SetActiveSave(SaveFile save)
-    { 
-        _activeSave = save; 
     }
 
     public SaveFile CreateNewSave()
@@ -44,20 +53,12 @@ public class SaveInterface
         return true;
     }
 
-    public bool Load()
-    {
-        if (_activeSave == null)
-            return false;
-        _activeSave.Load();
-        return true;
-    }
-
     public bool Load(SaveFile file)
     {
         if (_activeSave == null)
             return false;
         _activeSave = file;
-        Load();
+        _activeSave.Load();
         return true;
     }
 
@@ -70,7 +71,7 @@ public class SaveInterface
         return name + id + SaveFile.SAVE_EXTENSION;
     }
 
-    private void LoadAllSaves()
+    private List<SaveFile> LoadAllSaves()
     {
         List<SaveFile> savesfiles = new();
         string[] saves = Directory.GetFiles(SaveDirectory);
@@ -87,10 +88,6 @@ public class SaveInterface
             }
             savesfiles.Add(file);
         }
-
-        _allSaves = savesfiles.ToArray();
-#if DEBUG
-        Debug.Log($"Loaded {_allSaves.Length} valid save files.");
-#endif
+        return savesfiles;
     }
 }

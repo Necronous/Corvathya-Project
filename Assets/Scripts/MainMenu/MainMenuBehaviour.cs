@@ -12,16 +12,17 @@ public class MainMenuBehaviour : MonoBehaviour
     #region MainMenu
     public void NewGame_Click() 
     {
-        World.Instance.SaveHandler.CreateNewSave();
-        World.Instance.SetupGame();
+        SaveManager.Instance.CreateNewSave();
+        GameInitializer.Instance.CreateGame();
     }
     public void LoadGame_Click() 
     {
+        /*
         if (World.Instance.SaveHandler.AllSaves.Length > 0)
         {
             World.Instance.SaveHandler.SetActiveSave(World.Instance.SaveHandler.AllSaves[0]);
             World.Instance.SetupGame();
-        }
+        }*/
     }
     public void OptionsMenu_Click() 
     {

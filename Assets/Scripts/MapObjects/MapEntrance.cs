@@ -14,15 +14,15 @@ public class MapEntrance : MonoBehaviour
     public Direction EntranceFacingDirection = Direction.RIGHT;
 
 
-    void OnEnable()
+    void Start()
     {
-        World.Instance.AddEntrance(this);
+        MapManager.Instance.AddEntrance(this);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (World.Instance.MapTransitionHandler.IsTransitioning)
+        if (MapManager.Instance.IsMapTransition())
             return;
-        World.Instance.MapTransitionHandler.StartMapTransition(this);
+        MapManager.Instance.StartMapTransition(this);
     }
 }

@@ -84,7 +84,7 @@ public class SaveFile
         //refresh header.
         VersionMajor = WorldVariables.VERSION_MAJOR;
         VersionMinor = WorldVariables.VERSION_MINOR;
-        MapIndex = World.Instance.GetCurrentMapIndex();
+        MapIndex = MapManager.Instance.CurrentMapIndex;
         DateTime = DateTime.Now;
     }
     public void Load() 

@@ -60,8 +60,7 @@ public abstract class BaseEntityController : MonoBehaviour
 
     public virtual void Start()
     {
-        if (GetType() != typeof(PlayerController))
-            World.Instance.AddEntity(this);
+        MapManager.Instance.AddEntity(this);
         
         StateMachine = new();
         RigidBody = GetComponent<Rigidbody2D>();

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-public static class IO
+public static class BinaryExtensions
 {
     public static void Write(this BinaryWriter writer, int[] array)
     {

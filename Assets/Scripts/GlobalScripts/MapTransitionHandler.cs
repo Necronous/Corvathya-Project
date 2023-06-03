@@ -30,8 +30,7 @@ public class MapTransitionHandler
         IsTransitioning = true;
         _time = 0;
 
-        World.Instance.WorldPaused = true;
-        World.Player.PauseInput = true;
+        PlayerController.Instance.PauseInput = true;
 
         _moveMag = (_targetEntrance.EntranceFacingDirection == Direction.RIGHT) ? -1 : 1;
         CameraController.Instance.StartFade(Color.black, _transitionTime, null, false);
@@ -40,12 +39,12 @@ public class MapTransitionHandler
     private void Entering()
     {
         _time += Time.deltaTime;
-        World.Player.MovementMagnitude = _moveMag;
+        PlayerController.Instance.MovementMagnitude = _moveMag;
         if(_time >= _transitionTime)
         {
             _time = 0;
             _transitionState++;
-            World.Player.MovementMagnitude = 0;
+            PlayerController.Instance.MovementMagnitude = 0;
         }
     }
 
@@ -56,17 +55,15 @@ public class MapTransitionHandler
         
         //If target map is null, then we are targeting an entrance on the currently loaded map.
         if(!string.IsNullOrEmpty(targetMap))
-            World.Instance.LoadMap(targetMap);
+            MapManager.Instance.LoadMap(targetMap);
 
-        if (string.IsNullOrEmpty(targetEntry))
-            _targetEntrance = World.Instance.GetDefaultEntrance();
-        else
-            _targetEntrance = World.Instance.GetEntrance(targetEntry);
-        WorldVariables.Set(WorldVariables.PLAYER_LAST_ENTRANCE, World.Instance.GetEntranceIndex(_targetEntrance));
+        _targetEntrance = MapManager.Instance.GetEntrance(targetEntry);
+        
+        WorldVariables.Set(WorldVariables.PLAYER_LAST_ENTRANCE, MapManager.Instance.GetEntranceIndex(_targetEntrance));
 
         _moveMag = (_targetEntrance.EntranceFacingDirection == Direction.RIGHT) ? 1 : -1;
 
-        World.Player.transform.position = _targetEntrance.transform.position;
+        PlayerController.Instance.transform.position = _targetEntrance.transform.position;
         _transitionState++;
         CameraController.Instance.StartFade(Color.black, _transitionTime, null, true);
 
@@ -75,12 +72,12 @@ public class MapTransitionHandler
     private void Exiting()
     {
         _time += Time.deltaTime;
-        World.Player.MovementMagnitude = _moveMag;
+        PlayerController.Instance.MovementMagnitude = _moveMag;
         if (_time >= _transitionTime)
         {
             _time = 0;
             _transitionState++;
-            World.Player.MovementMagnitude = 0;
+            PlayerController.Instance.MovementMagnitude = 0;
             EndMapTransition();
         }
     }
@@ -91,8 +88,7 @@ public class MapTransitionHandler
         _transitionState = 0;
         IsTransitioning = false;
 
-        World.Instance.WorldPaused = false;
-        World.Player.PauseInput = false;
+        PlayerController.Instance.PauseInput = false;
 
         CameraController.Instance.SetPlayerFollowCamera();
     }

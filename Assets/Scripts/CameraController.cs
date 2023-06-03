@@ -71,7 +71,7 @@ public class CameraController : MonoBehaviour
 
     private void UpdateFollowCamera()
     {
-        SetPosition(World.Player.transform.position);
+        SetPosition(PlayerController.Instance.transform.position);
     }
     
     #region Fading

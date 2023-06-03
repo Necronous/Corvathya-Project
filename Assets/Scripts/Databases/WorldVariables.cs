@@ -1,4 +1,5 @@
 ﻿
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,19 +13,29 @@ public static partial class WorldVariables
      * Add variable key as a constant.
      * */
 
+    //0 - 100 reserved for player
     public const int PLAYER_LAST_ENTRANCE = 0;
     public const int PLAYER_LAST_CHECKPOINT = 1;
     public const int PLAYER_SAVED_POSITION = 2;
     public const int PLAYER_EQUIPED_WEAPON = 3;
+    public const int PLAYER_MAX_HEALTH = 4;
+    public const int PLAYER_CURRENT_HEALTH = 5;
 
-    public const int CURRENT_MAP_INDEX = 4;
-    public const int NEW_GAME = 5;
+    //100 - 200 reserved for global
+    public const int CURRENT_MAP_INDEX = 100;
+    public const int NEW_GAME = 101;
+
+    //200 - 250 reserved for map 1
+
+    //250 - 300 reserved for map 2 ...etc
 
     private static Dictionary<int, object> DefaultWorldVariables = new()
     {
         { PLAYER_LAST_ENTRANCE, 0 },
         { PLAYER_LAST_CHECKPOINT, 0 },
         { PLAYER_SAVED_POSITION, Vector3.zero },
+        { PLAYER_MAX_HEALTH, 10},
+        { PLAYER_CURRENT_HEALTH, 10},
 
         { PLAYER_EQUIPED_WEAPON, 0 },
 
@@ -44,6 +55,9 @@ public static partial class WorldVariables
     public static void Remove(int key) => Variables.Remove(key);
     
     public static T Get<T>(int key) => (T)Variables[key];
+    public static object Get(int key) => Variables[key];
+
+    public static Type GetType(int key) => Get(key).GetType();
 
     public static void Add(int key, object val) => Variables.Add(key, val);
     public static void Add(Dictionary<int, object> dic)

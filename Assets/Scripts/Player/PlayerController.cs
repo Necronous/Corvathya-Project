@@ -6,6 +6,8 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerEquipmentComponent))]
 public partial class PlayerController : BaseEntityController
 {
+    public static PlayerController Instance { get; private set; }
+
     private PlayerInputHandler _inputHandler;
     private PlayerEquipmentComponent _EquipmentHandler;
 
@@ -25,8 +27,10 @@ public partial class PlayerController : BaseEntityController
 
     public override void Start()
     {
-        if (World.Player != null)
+        if (Instance != null)
             Destroy(gameObject);
+        Instance = this;
+
         CameraController.Instance.SetPlayerFollowCamera();
 
         base.Start();
@@ -47,7 +51,7 @@ public partial class PlayerController : BaseEntityController
             transform.position = new Vector3(-2.95f, -0.27f, -0.01f);
             WorldVariables.Set(WorldVariables.NEW_GAME, false);
             WorldVariables.Set(WorldVariables.PLAYER_SAVED_POSITION, transform.position);
-            World.Instance.SaveHandler.Save();
+            SaveManager.Instance.Save();
         }
         else
         {
