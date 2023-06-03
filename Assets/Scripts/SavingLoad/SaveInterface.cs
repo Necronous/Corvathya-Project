@@ -16,6 +16,7 @@ public class SaveInterface
     public SaveInterface()
     {
         SaveDirectory = Path.Combine(Application.persistentDataPath, "Saves");
+        Debug.Log("save directory: " + SaveDirectory);
         if(!Directory.Exists(SaveDirectory))
             Directory.CreateDirectory(SaveDirectory);
         LoadAllSaves();

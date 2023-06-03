@@ -1,10 +1,13 @@
 
 using UnityEngine;
 
+
 [RequireComponent(typeof(PlayerInputHandler))]
+[RequireComponent(typeof(PlayerEquipmentComponent))]
 public partial class PlayerController : BaseEntityController
 {
     private PlayerInputHandler _inputHandler;
+    private PlayerEquipmentComponent _EquipmentHandler;
 
     private (byte CurrentCount, byte MaxCount, bool HighJump) _jumpData = (0, 2, false);
 
@@ -29,11 +32,28 @@ public partial class PlayerController : BaseEntityController
         base.Start();
 
         _inputHandler = GetComponent<PlayerInputHandler>();
+        _EquipmentHandler = GetComponent<PlayerEquipmentComponent>();
 
         RegisterAllStates();
         StateMachine.SetState(EntityState.IDLING);
 
         CollisionHandler.CareAboutPreciseCollisions(true, 4, 8);
+    }
+
+    public void Load()
+    {
+        if (WorldVariables.Get<bool>(WorldVariables.NEW_GAME))
+        {
+            transform.position = new Vector3(-2.95f, -0.27f, -0.01f);
+            WorldVariables.Set(WorldVariables.NEW_GAME, false);
+            WorldVariables.Set(WorldVariables.PLAYER_SAVED_POSITION, transform.position);
+            World.Instance.SaveHandler.Save();
+        }
+        else
+        {
+            transform.position = WorldVariables.Get<Vector3>(WorldVariables.PLAYER_SAVED_POSITION);
+        }
+        //_EquipmentHandler.SetWeapon(World.Instance.GetWorldVariable<int>("player.equipedweapon"));
     }
 
     protected override void Update()

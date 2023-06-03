@@ -62,7 +62,7 @@ public class MapTransitionHandler
             _targetEntrance = World.Instance.GetDefaultEntrance();
         else
             _targetEntrance = World.Instance.GetEntrance(targetEntry);
-        World.Instance.SetWorldVariable("player.lastentrance", World.Instance.GetEntranceIndex(_targetEntrance));
+        WorldVariables.Set(WorldVariables.PLAYER_LAST_ENTRANCE, World.Instance.GetEntranceIndex(_targetEntrance));
 
         _moveMag = (_targetEntrance.EntranceFacingDirection == Direction.RIGHT) ? 1 : -1;
 

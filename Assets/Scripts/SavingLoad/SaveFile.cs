@@ -23,8 +23,8 @@ public class SaveFile
 
     public SaveFile(string filepath)
     {
-        VersionMajor = World.VERSION_MAJOR; 
-        VersionMinor = World.VERSION_MINOR;
+        VersionMajor = WorldVariables.VERSION_MAJOR; 
+        VersionMinor = WorldVariables.VERSION_MINOR;
         DateTime = DateTime.Now;
         MapIndex = 0;
 
@@ -62,14 +62,14 @@ public class SaveFile
 
     public void Save()
     {
-        byte[] worldData = SerializeDictionary(World.Instance.GetWorldVariables());
+        byte[] worldData = SerializeDictionary(WorldVariables.Variables);
         
 
         using (BinaryWriter writer = new(new FileStream(FilePath, FileMode.Create)))
         {
             //Header = 28 bytes.
             writer.Write(new char[] { 'S', 'A', 'V', 'E' });
-            writer.Write(World.VERSION_MAJOR); writer.Write(World.VERSION_MINOR);
+            writer.Write(WorldVariables.VERSION_MAJOR); writer.Write(WorldVariables.VERSION_MINOR);
             DateTime time = DateTime.Now;
             writer.Write(time.Year); writer.Write(time.Month); writer.Write(time.Day);
             writer.Write(time.Hour); writer.Write(time.Minute);
@@ -82,28 +82,29 @@ public class SaveFile
         }
 
         //refresh header.
-        VersionMajor = World.VERSION_MAJOR;
-        VersionMinor = World.VERSION_MINOR;
+        VersionMajor = WorldVariables.VERSION_MAJOR;
+        VersionMinor = WorldVariables.VERSION_MINOR;
         MapIndex = World.Instance.GetCurrentMapIndex();
         DateTime = DateTime.Now;
     }
     public void Load() 
     {
+        WorldVariables.Reset();
         using (BinaryReader reader = new(new FileStream(FilePath, FileMode.Open)))
         {
             reader.BaseStream.Position = 30; //Skip header.
-            Dictionary<string, object> worldVars = DeserializeDictionary(reader.ReadBytes(reader.ReadInt32()));
-            World.Instance.SetWorldVariables(worldVars);
+            Dictionary<int, object> worldVars = DeserializeDictionary(reader.ReadBytes(reader.ReadInt32()));
+            WorldVariables.Add(worldVars);
         }
     }
 
-    public static byte[] SerializeDictionary(Dictionary<string, object> dict)
+    public static byte[] SerializeDictionary(Dictionary<int, object> dict)
     {
         MemoryStream ms = new();
         using (BinaryWriter writer = new(ms))
         {
             writer.Write(dict.Count);
-            foreach (KeyValuePair<string, object> kvp in dict)
+            foreach (KeyValuePair<int, object> kvp in dict)
             {
                 //First we write the key, then we write a byte which indicates value type then we write the value.
                 //Add encryption for strings.
@@ -130,24 +131,26 @@ public class SaveFile
                 { writer.Write((byte)9); writer.Write(f); }
                 else if (kvp.Value is double dd)
                 { writer.Write((byte)10); writer.Write(dd); }
+                else if (kvp.Value is int[] ia)
+                { writer.Write((byte)11); writer.Write(ia); }
 
             }
         }
         return ms.ToArray();
     }
 
-    public static Dictionary<string, object> DeserializeDictionary(byte[] b)
+    public static Dictionary<int, object> DeserializeDictionary(byte[] b)
     {
         MemoryStream ms = new(b);
         ms.Position = 0;
-        Dictionary<string, object> dict = new();
+        Dictionary<int, object> dict = new();
 
         using (BinaryReader reader = new(ms))
         {
             int count = reader.ReadInt32();
             for (int i = 0; i < count; i++)
             {
-                string key = reader.ReadString();
+                int key = reader.ReadInt32();
                 byte valuetype = reader.ReadByte();
                 object value = 0;
                 switch (valuetype)
@@ -163,6 +166,7 @@ public class SaveFile
                     case 8: value = new UnityEngine.Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle()); break;
                     case 9: value = reader.ReadSingle(); break;
                     case 10: value = reader.ReadDouble(); break;
+                    case 11: value = reader.ReadIntArray(); break;
                 }
                 dict.Add(key, value);
             }

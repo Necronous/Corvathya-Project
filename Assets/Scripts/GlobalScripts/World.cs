@@ -11,9 +11,7 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public class World : MonoBehaviour
 {
-    //Move this somewhere else later...
-    public const short VERSION_MAJOR = 0, VERSION_MINOR = 1;
-
+    
     public static World Instance { get; private set; }
     public static PlayerController Player { get; private set; }
 
@@ -22,8 +20,6 @@ public class World : MonoBehaviour
     public SaveInterface SaveHandler { get; private set; }
 
     public bool WorldPaused;
-
-    private Dictionary<string, object> _worldVariables = new();
 
     #region MapProperties
     private List<MapEntrance> _mapEntrances = new();
@@ -49,7 +45,7 @@ public class World : MonoBehaviour
     {
         MapTransitionHandler = new();
         SaveHandler = new();
-        _worldVariables = WorldVariablesDefine.GetDefaultWorldVariables();
+        WorldVariables.Reset();
         Player = transform.Find("Player").GetComponent<PlayerController>();
         //Player.PauseInput = true;
     }
@@ -68,17 +64,7 @@ public class World : MonoBehaviour
     {
         string mapname = GetMapNameByIndex(GetCurrentMapIndex());
         LoadMap(mapname);
-        if(GetWorldVariable<bool>("newgame"))
-        {
-            Player.transform.position = new Vector3(-2.95f, -0.27f, -0.01f);
-            SetWorldVariable("newgame", false);
-            SetWorldVariable("player.savedposition", Player.transform.position);
-            SaveHandler.Save();
-        }
-        else
-        {
-            Player.transform.position = GetWorldVariable<Vector3>("player.savedposition");
-        }
+        Player.Load();
         CameraController.Instance.SetStaticCamera();
         CameraController.Instance.SetPosition(Player.transform.position);
         CameraController.Instance.StartFade(Color.black, .5f, CameraController.Instance.SetPlayerFollowCamera, true);
@@ -90,97 +76,16 @@ public class World : MonoBehaviour
         //Assume saving has been done.
         Player.PauseInput = true;
         SceneManager.LoadScene("MainMenu");
-        _worldVariables = WorldVariablesDefine.GetDefaultWorldVariables();
+        WorldVariables.Reset();
     }
 
-    #region WorldVariables
-
-    public Dictionary<string, object> GetWorldVariables()
-        => _worldVariables;
-    public void SetWorldVariables(Dictionary<string, object> vars)
-    {
-        foreach(KeyValuePair<string, object> kvp in vars)
-        {
-            if(HasWorldVariable(kvp.Key))
-                SetWorldVariable(kvp.Key, kvp.Value);
-            _worldVariables.Add(kvp.Key, kvp.Value);
-        }
-    }
-    public void RemoveWorldVariable(string key)
-    {
-        if(_worldVariables.ContainsKey(key))
-            _worldVariables.Remove(key);
-    }
-    public void AddWorldVariable(string key, object value)
-    {
-        if (_worldVariables.ContainsKey(key))
-        {
-            SetWorldVariable(key, value);
-            return;
-        }
-        _worldVariables.Add(key, value);
-    }
-    /// <summary>
-    /// Checks if a world variable exists.
-    /// </summary>
-    /// <param name="key">Key of the value to check</param>
-    /// <returns></returns>
-    public bool HasWorldVariable(string key) => _worldVariables.ContainsKey(key);
-
-    /// <summary>
-    /// Sets a world variable with the current map name prefixed before the key.
-    /// IE "Mortuary.BossXDead".
-    /// </summary>
-    /// <param name="key">Name of variable, will be automatically prefixed with map name.</param>
-    /// <param name="value">Value of the variable.</param>
-    public void SetMapVariable(string key, object value)
-        => SetWorldVariable(GetMapNameByIndex(GetCurrentMapIndex()) + "." + key, value);
-    /// <summary>
-    /// Sets a world variable with the given key.
-    /// </summary>
-    /// <param name="key">Variable name.</param>
-    /// <param name="value">Variable value.</param>
-    public void SetWorldVariable(string key, object value)
-    {
-        if(HasWorldVariable(key))
-            _worldVariables[key] = value;
-    }
-
-    /// <summary>
-    /// returns the world variable stored with the key.
-    /// </summary>
-    /// <typeparam name="T">Type to convert variable to</typeparam>
-    /// <param name="key">The world variable</param>
-    /// <returns></returns>
-    public T GetWorldVariable<T>(string key) => (T)_worldVariables[key];
-    /// <summary>
-    /// Tries to retrieve a world variable with the given key.
-    /// </summary>
-    /// <typeparam name="T">Type to convert variable to</typeparam>
-    /// <param name="key">Variable key.</param>
-    /// <param name="result">The retrieved variable</param>
-    /// <returns>Returns true on success and false if variable not found or type casting failure.</returns>
-    public bool TryGetWorldVariable<T>(string key, out T result)
-    {
-        result = default(T);
-        Type t = typeof(T);
-        if (!HasWorldVariable(key))
-            return false;
-        object value = _worldVariables[key];
-        if (value is T v)
-        {
-            result = v;
-            return true;
-        }
-        return false;
-    }
-    #endregion
+    
     #region MapLoading
 
     public string GetCurrentMapName()
         => GetMapNameByIndex(GetCurrentMapIndex());
     public int GetCurrentMapIndex()
-        => GetWorldVariable<int>("currentmapindex");
+        => WorldVariables.Get<int>(WorldVariables.CURRENT_MAP_INDEX);
 
     public bool MapExists(string mapName)
         => GetMapIndexByName(mapName) != -1;
@@ -201,7 +106,7 @@ public class World : MonoBehaviour
         if (!MapExists(mapname))
             return;
         SceneManager.LoadScene(mapname);
-        SetWorldVariable("currentmapindex", GetMapIndexByName(mapname));
+        WorldVariables.Set(WorldVariables.CURRENT_MAP_INDEX, GetMapIndexByName(mapname));
     }
 
     #endregion

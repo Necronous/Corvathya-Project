@@ -27,7 +27,7 @@ public class WorldInspector : Editor
             }
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
-            foreach (KeyValuePair<string, object> kvp in World.Instance.GetWorldVariables())
+            foreach (KeyValuePair<int, object> kvp in WorldVariables.Variables)
             {
                 if (_color)
                     _style.normal.textColor = Color.white;
