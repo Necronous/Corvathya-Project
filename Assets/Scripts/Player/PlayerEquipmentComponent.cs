@@ -40,11 +40,20 @@ public class PlayerEquipmentComponent : MonoBehaviour
             Debug.LogError("[PlayerEquipmentComponent.cs] weapon is null!");
             return;
         }
-        Player.StateMachine.RegisterState(EntityState.LIGHT_ATTACK, weapon.LightAttack, true);
-        Player.StateMachine.RegisterState(EntityState.HEAVY_ATTACK, weapon.HeavyAttack, true);
         WorldVariables.Set(WorldVariables.PLAYER_EQUIPED_WEAPON, WorldVariables.GetIndexForWeapon(weapon));
     }
 
+    /// <summary>
+    /// Equips the weapon.
+    /// </summary>
+    /// <param name="id">id of weapon to equip</param>
+    public void EquipWeapon(int id)
+    {
+        IWeapon weapon = WorldVariables.GetWeaponFromIndex(id);
+        if (weapon == null)
+            weapon = WorldVariables.GetWeaponFromIndex(0);
+        EquipWeapon(weapon);
+    }
     /// <summary>
     /// Equips the weapon.
     /// </summary>
@@ -59,25 +68,8 @@ public class PlayerEquipmentComponent : MonoBehaviour
             return;
         }
 
-        Player.StateMachine.RegisterState(EntityState.LIGHT_ATTACK, wep.LightAttack, true);
-        Player.StateMachine.RegisterState(EntityState.HEAVY_ATTACK, wep.HeavyAttack, true);
-
-        EquipedWeapon.UnEquip();
         EquipedWeapon = wep;
-        EquipedWeapon.Equip();
         WorldVariables.Set(WorldVariables.PLAYER_EQUIPED_WEAPON, WorldVariables.GetIndexForWeapon(wep));
         OnWeaponChange.Invoke(wep);
     }
-    /// <summary>
-    /// Equips the weapon.
-    /// </summary>
-    /// <param name="id">id of weapon to equip</param>
-    public void EquipWeapon(int id)
-    {
-        IWeapon weapon = WorldVariables.GetWeaponFromIndex(id);
-        if (weapon == null)
-            weapon = WorldVariables.GetWeaponFromIndex(0);
-        EquipWeapon(weapon);
-    }
 }
-

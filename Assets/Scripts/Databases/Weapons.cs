@@ -3,7 +3,7 @@ public static partial class WorldVariables
 {
     private static IWeapon[] Weapons = new IWeapon[]
     {
-
+        new Debug_Sword(),
     };
 
     public static int GetMaxWeapons => Weapons.Length;

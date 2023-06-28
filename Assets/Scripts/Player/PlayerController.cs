@@ -1,15 +1,13 @@
 
 using UnityEngine;
 
-
-[RequireComponent(typeof(PlayerInputHandler))]
-[RequireComponent(typeof(PlayerEquipmentComponent))]
 public partial class PlayerController : BaseEntityController
 {
     public static PlayerController Instance { get; private set; }
 
-    private PlayerInputHandler _inputHandler;
-    private PlayerEquipmentComponent _EquipmentHandler;
+    public PlayerInputHandler InputHandler { get; private set; }
+    public PlayerEquipmentComponent EquipmentHandler { get; private set; }
+    public PlayerCombatComponent CombatHandler { get; private set; }
 
     private (byte CurrentCount, byte MaxCount, bool HighJump) _jumpData = (0, 2, false);
 
@@ -21,29 +19,30 @@ public partial class PlayerController : BaseEntityController
 
     public bool PauseInput
     {
-        get => _inputHandler.PauseInput;
-        set => _inputHandler.PauseInput = value;
+        get => InputHandler.PauseInput;
+        set => InputHandler.PauseInput = value;
+        
     }
-
     public override void Start()
     {
         if (Instance != null)
             Destroy(gameObject);
         Instance = this;
 
-        CameraController.Instance.SetPlayerFollowCamera();
-
         base.Start();
 
-        _inputHandler = GetComponent<PlayerInputHandler>();
-        _EquipmentHandler = GetComponent<PlayerEquipmentComponent>();
+        InputHandler = GetComponent<PlayerInputHandler>();
+        EquipmentHandler = GetComponent<PlayerEquipmentComponent>();
+        CombatHandler = GetComponent<PlayerCombatComponent>();
 
         RegisterAllStates();
         StateMachine.SetState(EntityState.IDLING);
 
         CollisionHandler.CareAboutPreciseCollisions(true, 4, 8);
-    }
 
+        EquipmentHandler.SetWeapon(WorldVariables.Get<int>(WorldVariables.PLAYER_EQUIPED_WEAPON));
+        CameraController.Instance.SetPlayerFollowCamera();
+    }
     public void Load()
     {
         if (WorldVariables.Get<bool>(WorldVariables.NEW_GAME))
@@ -54,26 +53,18 @@ public partial class PlayerController : BaseEntityController
             SaveManager.Instance.Save();
         }
         else
-        {
             transform.position = WorldVariables.Get<Vector3>(WorldVariables.PLAYER_SAVED_POSITION);
-        }
-        //_EquipmentHandler.SetWeapon(World.Instance.GetWorldVariable<int>("player.equipedweapon"));
+        
+        EquipmentHandler.SetWeapon(WorldVariables.Get<int>(WorldVariables.PLAYER_EQUIPED_WEAPON));
     }
 
     protected override void Update()
     {
         if (!PauseInput)
-            MovementMagnitude = _inputHandler.GetHorizontalMovement();
+        {
+            MovementMagnitude = InputHandler.GetHorizontalMovement();
+        }
         base.Update();
-    }
-
-    protected override void OnDeathCallback(MonoBehaviour source)
-    {
-        base.OnDeathCallback(source);
-    }
-    protected override void OnDamageCallback(MonoBehaviour source, int damage)
-    {
-        base.OnDamageCallback(source, damage);
     }
 
     private void RegisterAllStates()

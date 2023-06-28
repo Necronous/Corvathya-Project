@@ -10,8 +10,8 @@ public partial class PlayerController
         if(!OnGround)
         { StateMachine.SetState(EntityState.FALLING); return true; }
         
-        if (_inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED
-            || _inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_DOWN)
+        if (InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED
+            || InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_DOWN)
         { StateMachine.SetState(EntityState.JUMP_TAKINGOFF); return true; }
         
         return false;
@@ -25,7 +25,7 @@ public partial class PlayerController
         { StateMachine.SetState(EntityState.RUNNING); return false; }
         if (Velocity.x != 0)
         { StateMachine.SetState(EntityState.SLIDING); return false; }
-        if (_inputHandler.GetVerticalMovement() < 0)
+        if (InputHandler.GetVerticalMovement() < 0)
         { StateMachine.SetState(EntityState.CROUCHING); return false; }
 
         Animator.Play("Idle");
@@ -38,7 +38,7 @@ public partial class PlayerController
 
         if (MovementMagnitude == 0)
         { StateMachine.SetState(EntityState.IDLING); return false; }
-        if (_inputHandler.GetVerticalMovement() < 0)
+        if (InputHandler.GetVerticalMovement() < 0)
         { StateMachine.SetState(EntityState.CROUCHING); return false; }
 
         float targetSpeed = MovementMagnitude * MaxSpeed;
@@ -65,7 +65,7 @@ public partial class PlayerController
         { StateMachine.SetState(EntityState.RUNNING); return false; }
         if (Velocity.x == 0)
         { StateMachine.SetState(EntityState.IDLING); return false; }
-        if (_inputHandler.GetVerticalMovement() < 0)
+        if (InputHandler.GetVerticalMovement() < 0)
         { StateMachine.SetState(EntityState.CROUCHING); return false; }
 
         Velocity.x = Mathf.MoveTowards(Velocity.x, 0, Deceleration);
@@ -80,7 +80,7 @@ public partial class PlayerController
     }
     private bool State_Crouching()
     {
-        if (_inputHandler.GetVerticalMovement() >= 0)
+        if (InputHandler.GetVerticalMovement() >= 0)
         { StateMachine.SetState(EntityState.IDLING); return false; }
 
         //Decelerate faster

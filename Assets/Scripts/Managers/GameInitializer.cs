@@ -34,8 +34,7 @@ public class GameInitializer : MonoBehaviour
     {
         MapManager.Instance.LoadMap(WorldVariables.Get<int>(WorldVariables.CURRENT_MAP_INDEX));
         PlayerController.Instance.Load();
-        CameraController.Instance.SetStaticCamera();
-        CameraController.Instance.SetPosition(PlayerController.Instance.transform.position);
+        CameraController.Instance.SetStaticCamera(PlayerController.Instance.transform.position);
         CameraController.Instance.StartFade(Color.black, .5f, CameraController.Instance.SetPlayerFollowCamera, true);
         //Player.PauseInput = false;
     }

@@ -21,7 +21,7 @@ public class SaveManager
 
     #endregion
 
-    private string SaveDirectory;
+    public string SaveDirectory { get; private set; }
 
     private SaveFile _activeSave;
 
@@ -82,10 +82,7 @@ public class SaveManager
 
             SaveFile file = new(s);
             if (file.Fault != SaveFile.SaveFault.NONE)
-            {
-                //If invalid save, report then add it the list anyway.
                 Debug.LogError($"SaveFile Error :: Name: {Path.GetFileName(s)}, Error: {file.Fault}");
-            }
             savesfiles.Add(file);
         }
         return savesfiles;

@@ -102,6 +102,10 @@ public class EntityCollision : MonoBehaviour
 
     public Collider2D OverlapArea(Vector2 start, Vector2 end)
         => OverlapArea(start, end, _layersToCheck);
+    public Collider2D OverlapArea(Rect rect)
+        => OverlapArea(rect.position, rect.position + rect.size, _layersToCheck);
+    public Collider2D OverlapArea(Rect rect, int layermask)
+        => OverlapArea(rect.position, rect.position + rect.size, layermask);
     public Collider2D OverlapArea(Vector2 start, Vector2 end, int layermask)
     {
         Collider2D col = Physics2D.OverlapArea(start, end, layermask);

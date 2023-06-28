@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
@@ -28,10 +29,14 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         _fadeTexture = new Texture2D(1, 1);
-        SetMode(CameraMode.STATIC);
     }
 
     public void SetStaticCamera() => SetMode(CameraMode.STATIC);
+    public void SetStaticCamera(Vector2 position)
+    {
+        transform.position = position;
+        SetStaticCamera();
+    }
     public void SetPlayerFollowCamera() => SetMode(CameraMode.FOLLOW_PLAYER);
     public void SetCinematicCamera() => SetMode(CameraMode.CINEMATIC);
     public void SetMode(CameraMode mode)

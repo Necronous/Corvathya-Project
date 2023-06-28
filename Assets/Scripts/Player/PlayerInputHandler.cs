@@ -29,8 +29,22 @@ public class PlayerInputHandler : MonoBehaviour
     private InputAction _lightAttack;
     private InputAction _heavyAttack;
 
-    public bool PauseInput;
+    private bool _pauseInput;
+    public bool PauseInput
+    {
+        get => _pauseInput;
+        set
+        {
+            _pauseInput = value;
+            if (value)
+                OnInputPaused.Invoke();
+            else
+                OnInputUnpaused.Invoke();
+        }
+    }
 
+    public Event OnInputPaused = new();
+    public Event OnInputUnpaused = new();
 
     void Start()
     {

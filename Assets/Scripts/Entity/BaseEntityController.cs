@@ -13,15 +13,14 @@ using UnityEngine.Rendering;
 /// </summary>
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(EntityCollision))]
-[RequireComponent(typeof(EntityHealthComponent))]
+[RequireComponent(typeof(EntityAnimation))]
 public abstract class BaseEntityController : MonoBehaviour
 {
     protected Rigidbody2D RigidBody;
 
     public StateMachine<EntityState> StateMachine { get; protected set; }
-    public Animator Animator { get; protected set; }
+    public EntityAnimation Animator { get; protected set; }
     public EntityCollision CollisionHandler { get; protected set; }
-    public EntityHealthComponent HealthHandler { get; protected set; }
 
     [Header("Base_Physics")]
     public Vector2 Velocity;
@@ -37,6 +36,16 @@ public abstract class BaseEntityController : MonoBehaviour
 
     [Header("Base_Detection")]
     public float ViewDistance = 8f;
+
+    [Header("Base_Health")]
+    public int MaxHealth = 10;
+    public int CurrentHealth = 10;
+    public bool IsDead;
+    public bool IsInvincible;
+
+    //Events
+    public Event<BaseEntityController, int> OnReceiveDamage = new();
+    public Event<BaseEntityController> OnDeath = new();
 
     public bool OnCeiling => CollisionHandler.UpCollision;
     public bool OnGround => CollisionHandler.DownCollision;
@@ -64,12 +73,8 @@ public abstract class BaseEntityController : MonoBehaviour
         
         StateMachine = new();
         RigidBody = GetComponent<Rigidbody2D>();
-        Animator = transform.Find("Sprite").GetComponent<Animator>();
+        Animator = GetComponent<EntityAnimation>();
         CollisionHandler = GetComponent<EntityCollision>();
-        HealthHandler = GetComponent<EntityHealthComponent>();
-
-        HealthHandler.OnDeath += OnDeathCallback;
-        HealthHandler.OnDamage += OnDamageCallback;
     }
     /* 
      * Because the statemachine does input and physics
@@ -90,38 +95,37 @@ public abstract class BaseEntityController : MonoBehaviour
     {
         RigidBody.velocity = Velocity;
     }
-    protected virtual void OnDamageCallback(MonoBehaviour source, int damage)
-    { }
-    protected virtual void OnDeathCallback(MonoBehaviour source)
-    { }
 
     public void SetPosition(Vector2 position)
     {
         RigidBody.MovePosition(position);
     }
 
-    /// <summary>
-    /// Check if an object is in view of the entity
-    /// based view distance.
-    /// </summary>
-    /// <param name="obj">Object to look for</param>
-    /// <returns>True if in view, else false.</returns>
-    public bool InView(GameObject obj) => InView(obj, out float dist);
-    
-    /// <summary>
-    /// Check if an object is in view of the entity
-    /// based on view distance.
-    /// </summary>
-    /// <param name="obj">Object to look for.</param>
-    /// <param name="distance">Distance of target if in view.</param>
-    /// <returns>True if in view, else false.</returns>
-    public bool InView(GameObject obj, out float distance)
+    #region Health
+    public void Kill(BaseEntityController src = null)
     {
-        distance = Vector3.Distance(obj.transform.position, transform.position);
-        if (distance > ViewDistance 
-            || (distance < 0 && FacingDirection == 1)
-            || (distance > 0 && FacingDirection == -1))
-            return false;
-        return true;
+        if (IsInvincible || IsDead)
+            return;
+        CurrentHealth = 0;
+        IsDead = true;
+        OnDeath.Invoke(src);
     }
+
+    public void Damage(BaseEntityController src, int damage)
+    {
+        if (IsInvincible || IsDead)
+            return;
+        CurrentHealth -= damage;
+        OnReceiveDamage.Invoke(src, damage);
+
+        if (CurrentHealth <= 0)
+        { Kill(src); return; }
+    }
+
+    public void ResetHealth()
+    {
+        IsDead = IsInvincible = false;
+        CurrentHealth = MaxHealth;
+    }
+    #endregion
 }

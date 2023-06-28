@@ -29,7 +29,7 @@ public partial class PlayerController
         if (State_CommonAirCancels() || State_CheckWallState())
             return false;
 
-        if (_inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED)
+        if (InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED)
             if (CanAirJump())
                 return false;
 
@@ -38,6 +38,7 @@ public partial class PlayerController
             Velocity.y = MaxFallSpeed;
 
         State_AirMove();
+        Animator.Play("Falling");
 
         return true;
     }
@@ -69,10 +70,10 @@ public partial class PlayerController
         if (State_CheckWallState())
             return false;
 
-        if (_inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_UP)
+        if (InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_UP)
             _jumpData.HighJump = false;
 
-        if (_inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED)
+        if (InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED)
             if (CanAirJump())
                 return false;
 
@@ -92,6 +93,7 @@ public partial class PlayerController
         }
 
         State_AirMove();
+        Animator.Play("Jump_Up");
 
         return true;
     }
@@ -104,7 +106,7 @@ public partial class PlayerController
         if (StateMachine.CurrentStateTime >= ApexAirTime)
             StateMachine.SetState(EntityState.FALLING);
 
-        if (_inputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED)
+        if (InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED)
             if (CanAirJump())
                 return false;
 

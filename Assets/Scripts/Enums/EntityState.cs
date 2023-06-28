@@ -29,7 +29,10 @@ public enum EntityState
     WALL_SLIDING, 
     WALL_JUMPING,
 
-    LIGHT_ATTACK,
-    HEAVY_ATTACK,
+    GROUND_LIGHT_ATTACK,
+    GROUND_HEAVY_ATTACK,
+    AIR_LIGHT_ATTACK,
+    AIR_HEAVY_ATTACK,
+
     //EnemySpecific
 }

@@ -70,10 +70,10 @@ public partial class PlayerController
 
     private bool State_LedgeGrab()
     {
-        if(_inputHandler.GetVerticalMovement() < 0)
+        if(InputHandler.GetVerticalMovement() < 0)
         { StateMachine.SetState(EntityState.FALLING); return false; }
 
-        if (_inputHandler.KeyDown(PlayerInputHandler.ACTION_JUMP)
+        if (InputHandler.KeyDown(PlayerInputHandler.ACTION_JUMP)
             && State_CheckLedgeClimb())
             return false;
 
