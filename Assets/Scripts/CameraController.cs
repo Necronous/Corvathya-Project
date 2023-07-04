@@ -13,10 +13,10 @@ public class CameraController : MonoBehaviour
     private float _fadeTime;
     private bool _fadeIn;
     private AnimationCurve _fadeCurve = new(new Keyframe(0, 1), new Keyframe(0.6f, 0.7f, -1.8f, -1.2f), new Keyframe(.5f, 0));
+    public bool IsFading;
     #endregion
 
-    public CameraMode CameraMode;// { get; private set; }
-    public bool IsFading;
+    public CameraMode CameraMode { get; private set; }
 
     private void Awake()
     {

@@ -17,8 +17,7 @@ using UnityEngine.Rendering;
 public abstract class BaseEntityController : MonoBehaviour
 {
     protected Rigidbody2D RigidBody;
-
-    public StateMachine<EntityState> StateMachine { get; protected set; }
+    public EntityStateMachine StateMachine { get; protected set; }
     public EntityAnimation Animator { get; protected set; }
     public EntityCollision CollisionHandler { get; protected set; }
 
@@ -76,23 +75,14 @@ public abstract class BaseEntityController : MonoBehaviour
         Animator = GetComponent<EntityAnimation>();
         CollisionHandler = GetComponent<EntityCollision>();
     }
-    /* 
-     * Because the statemachine does input and physics
-     * it does not belong in either Update or FixedUpdate.
-     * If its done in update the physics get screwed up
-     * and if its done in fixedupdate the input get screwed.
-     * 
-     * As a temporary fix ive set the physics update rate and the target framerate to 60fps
-     * to help sync them both up. This seems to work fine but its not ideal.
-     * 
-     * Todo: Find a better solution.
-     */
+
     protected virtual void Update()
     {
-        StateMachine.UpdateMachine();
+        StateMachine.Update();
     }
     protected virtual void FixedUpdate()
     {
+        StateMachine.FixedUpdate();
         RigidBody.velocity = Velocity;
     }
 

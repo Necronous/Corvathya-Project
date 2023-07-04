@@ -1,11 +1,7 @@
 
+
 #define ENTITYCOLLISION_DEBUG
 
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditor.PackageManager.UI;
 using UnityEngine;
 
 public class EntityCollision : MonoBehaviour
@@ -35,7 +31,11 @@ public class EntityCollision : MonoBehaviour
     private bool _careAboutPreciseCollisions = false;
     private int _verticalCollisionResolution = 2;
     private int _horizontalCollisionResolution = 4;
-    private int _layersToCheck = 0;
+    private Bitmask32 _layersBitmask = 0;
+
+    public bool GetCollidesWith(int layer) => _layersBitmask.IsSet(layer);
+    public void SetCollidesWith(int layer, bool set) => _layersBitmask.Set(layer, set);
+    public void SetCollidesWith(string layer, bool set) => _layersBitmask.Set(LayerMask.NameToLayer(layer), set);
 
     public bool CaresAboutPrecision => _careAboutPreciseCollisions;
     public int VerticalResolution => _verticalCollisionResolution;
@@ -86,8 +86,10 @@ public class EntityCollision : MonoBehaviour
         _rightCollisionInfo = new (bool Collision, Collider2D Collider)[horizontalres];
     }
 
+
+    #region Casting
     public RaycastHit2D Linecast(Vector2 start, Vector2 end)
-        => Linecast(start, end, _layersToCheck);
+        => Linecast(start, end, _layersBitmask);
     public RaycastHit2D Linecast(Vector2 start, Vector2 end, int layermask)
     {
         RaycastHit2D hit = Physics2D.Linecast(start, end, layermask);
@@ -100,31 +102,53 @@ public class EntityCollision : MonoBehaviour
         return hit;
     }
 
-    public Collider2D OverlapArea(Vector2 start, Vector2 end)
-        => OverlapArea(start, end, _layersToCheck);
-    public Collider2D OverlapArea(Rect rect)
-        => OverlapArea(rect.position, rect.position + rect.size, _layersToCheck);
-    public Collider2D OverlapArea(Rect rect, int layermask)
+    public Collider2D[] OverlapArea(Vector2 start, Vector2 end)
+        => OverlapArea(start, end, _layersBitmask);
+    public Collider2D[] OverlapArea(Rect rect)
+        => OverlapArea(rect.position, rect.position + rect.size, _layersBitmask);
+    public Collider2D[] OverlapArea(Rect rect, int layermask)
         => OverlapArea(rect.position, rect.position + rect.size, layermask);
-    public Collider2D OverlapArea(Vector2 start, Vector2 end, int layermask)
+    public Collider2D[] OverlapArea(Vector2 start, Vector2 end, int layermask)
     {
-        Collider2D col = Physics2D.OverlapArea(start, end, layermask);
-#if ENTITYCOLLISION_DEBUG
-        if (col)
-            DebugExtensions.DrawBox(start, end, Color.red);
-        else
-            DebugExtensions.DrawBox(start, end, Color.green);
-#endif
-        return col;
+        Collider2D[] colliders = new Collider2D[4];
+        ContactFilter2D filter = new();
+        filter.layerMask = layermask;
+
+        int count = Physics2D.OverlapArea(start, end, filter, colliders);
+
+        #if ENTITYCOLLISION_DEBUG
+            DebugExtensions.DrawBox(start, end, count > 0 ? Color.red : Color.green);
+        #endif
+        
+        return count > 0 ? colliders : null;
     }
-    
+    public int OverlapArea(Vector2 start, Vector2 end, Collider2D[] collisions)
+        => OverlapArea(start, end, _layersBitmask, collisions);
+    public int OverlapArea(Rect rect, Collider2D[] collisions)
+        => OverlapArea(rect.position, rect.position + rect.size, _layersBitmask, collisions);
+    public int OverlapArea(Rect rect, int layermask, Collider2D[] collisions)
+        => OverlapArea(rect.position, rect.position + rect.size, layermask, collisions);
+    public int OverlapArea(Vector2 start, Vector2 end, int layermask, Collider2D[] collisions)
+    {
+        ContactFilter2D filter = new();
+        filter.layerMask = layermask;
+
+        int count = Physics2D.OverlapArea(start, end, filter, collisions);
+
+        #if ENTITYCOLLISION_DEBUG
+        DebugExtensions.DrawBox(start, end, count > 0 ? Color.red : Color.green);
+        #endif
+
+        return count;
+    }
+
     /// <summary>
     /// Moves the collider to position, Checks for collisions then moves the collider back.
     /// </summary>
     /// <param name="position">Position to check.</param>
     /// <returns></returns>
     public Collider2D Cast(Vector2 position)
-        => Cast(position, _layersToCheck);
+        => Cast(position, _layersBitmask);
     /// <summary>
     /// Moves the collider to position, Checks for collisions then moves the collider back.
     /// </summary>
@@ -148,8 +172,7 @@ public class EntityCollision : MonoBehaviour
         return col;
     }
 
-    public bool CollidesWithLayer(int layer)
-        => (_layersToCheck & (1 << layer)) == (1 << layer);
+    #endregion
 
     private void Start()
     {
@@ -157,7 +180,7 @@ public class EntityCollision : MonoBehaviour
         _baseCollisionInfo = new (bool collision, Collider2D collider)[4];
         
         int currentlayer = gameObject.layer;
-        _layersToCheck = Physics2D.GetLayerCollisionMask(currentlayer);
+        _layersBitmask = Physics2D.GetLayerCollisionMask(currentlayer);
     }
 
     private void FixedUpdate()
@@ -179,7 +202,7 @@ public class EntityCollision : MonoBehaviour
 
         for (int i = 0; i < contactCount; i++)
         {
-            if (_collisionContacts[i].collider.isTrigger || !CollidesWithLayer(_collisionContacts[i].collider.gameObject.layer))
+            if (_collisionContacts[i].collider.isTrigger || !GetCollidesWith(_collisionContacts[i].collider.gameObject.layer))
                 continue;
 
             Vector3 normal = _collisionContacts[i].normal;
@@ -232,7 +255,7 @@ public class EntityCollision : MonoBehaviour
                 yOffset
                 );
             Vector2 boxEnd = boxStart + new Vector2(boxWidth, .1f * dir);
-            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, _layersToCheck);
+            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, _layersBitmask);
 
             if (dir > 0)
                 _upCollisionInfo[i] = (col != null, col);
@@ -260,7 +283,7 @@ public class EntityCollision : MonoBehaviour
                 transform.position.y + (i * boxHeight)
                 );
             Vector2 boxEnd = boxStart + new Vector2(.1f * dir, boxHeight);
-            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, _layersToCheck);
+            Collider2D col = Physics2D.OverlapArea(boxStart, boxEnd, _layersBitmask);
 
             if (dir > 0)
                 _rightCollisionInfo[i] = (col != null, col);

@@ -1,4 +1,5 @@
 
+using PlayerStates;
 using UnityEngine;
 
 public partial class PlayerController : BaseEntityController
@@ -9,7 +10,7 @@ public partial class PlayerController : BaseEntityController
     public PlayerEquipmentComponent EquipmentHandler { get; private set; }
     public PlayerCombatComponent CombatHandler { get; private set; }
 
-    private (byte CurrentCount, byte MaxCount, bool HighJump) _jumpData = (0, 2, false);
+    public (byte CurrentCount, byte MaxCount, bool HighJump) JumpData = (0, 2, false);
 
     [Header("Player_Physics")]
     public float WallHangTime = 1f;
@@ -69,26 +70,91 @@ public partial class PlayerController : BaseEntityController
 
     private void RegisterAllStates()
     {
-        StateMachine.RegisterState(EntityState.IDLING, State_Idling);
-        StateMachine.RegisterState(EntityState.RUNNING, State_Running);
-        StateMachine.RegisterState(EntityState.SLIDING, State_Sliding);
-        StateMachine.RegisterState(EntityState.HARD_TURNING, State_Turning);
-        StateMachine.RegisterState(EntityState.CROUCHING, State_Crouching);
-        StateMachine.RegisterState(EntityState.JUMP_TAKINGOFF, State_JumpTakingOff);
-        StateMachine.RegisterState(EntityState.JUMP_LANDING, State_JumpLanding);
-        StateMachine.RegisterState(EntityState.DODGING, State_Dodge);
+        StateMachine.RegisterState(EntityState.IDLING, new State_Idle());
+        StateMachine.RegisterState(EntityState.RUNNING, new State_Running());
+        StateMachine.RegisterState(EntityState.SLIDING, new State_Sliding());
+        StateMachine.RegisterState(EntityState.CROUCHING, new State_Crouching());
+        StateMachine.RegisterState(EntityState.JUMP_TAKINGOFF, new State_JumpTakingOff());
+        StateMachine.RegisterState(EntityState.JUMP_LANDING, new State_JumpLanding());
         
-        StateMachine.RegisterState(EntityState.FALLING, State_Falling);
-        StateMachine.RegisterState(EntityState.GLIDING, State_Gliding);
-        StateMachine.RegisterState(EntityState.JUMPING, State_Jumping);
-        StateMachine.RegisterState(EntityState.JUMP_APEX, State_JumpApex);
+        StateMachine.RegisterState(EntityState.FALLING, new State_Falling());
+        StateMachine.RegisterState(EntityState.JUMPING, new State_Jumping());
+        StateMachine.RegisterState(EntityState.JUMP_APEX, new State_Jump_Apex());
 
-        StateMachine.RegisterState(EntityState.LEDGE_GRABBING, State_LedgeGrab);
-        StateMachine.RegisterState(EntityState.LEDGE_CLIMBING, State_LedgeClimb);
+        StateMachine.RegisterState(EntityState.LEDGE_GRABBING, new State_LedgeGrab());
+        StateMachine.RegisterState(EntityState.LEDGE_CLIMBING, new State_LedgeClimb());
+    }
 
-        StateMachine.RegisterState(EntityState.WALL_HANGING, State_WallHang);
-        StateMachine.RegisterState(EntityState.WALL_JUMPING, State_WallJump);
-        StateMachine.RegisterState(EntityState.WALL_SLIDING, State_WallSlide);
-        StateMachine.RegisterState(EntityState.WALL_RUNNING, State_WallRun);
+    public bool CanAirJump()
+    {
+        if (JumpData.CurrentCount >= JumpData.MaxCount)
+            return false;
+
+        JumpData.CurrentCount++;
+        Velocity.y = JumpForce;
+        JumpData.HighJump = true;
+        StateMachine.SetState(EntityState.JUMPING);
+        return true;
+    }
+    public bool CheckForWallStateChange()
+    {
+        (bool collision, Collider2D collider)[] coldata = null;
+
+        if (FacingDirection > 0 && OnRightWall && MovementMagnitude > 0)
+            coldata = CollisionHandler.GetRightCollisions();
+        else if (FacingDirection < 0 && OnLeftWall && MovementMagnitude < 0)
+            coldata = CollisionHandler.GetLeftCollisions();
+        else
+            return false;
+
+        /*
+        //If on wall.
+        if ( coldata[0].collision && coldata[1].collision
+            && coldata[2].collision && coldata[3].collision 
+            && coldata[4].collision && coldata[5].collision 
+            && coldata[6].collision && coldata[7].collision )
+        {
+            Velocity = Vector2.zero;
+            StateMachine.SetState(EntityStateEnum.WALL_HANGING);
+            return true;
+        }
+        */
+
+        //OnLedge
+        if ( coldata[6].collision && !coldata[7].collision
+            && StateMachine.GetLastStateID() != EntityState.LEDGE_GRABBING
+            && Velocity.y <= 0)
+        {
+            Vector3 castStart = new(
+                transform.position.x + ((CollisionHandler.HalfWidth + 0.2f) * FacingDirection),
+                transform.position.y + CollisionHandler.Height + .1f
+                );
+
+            RaycastHit2D hit = CollisionHandler.Linecast(castStart, castStart + (Vector3.down * CollisionHandler.HalfHeight));
+
+            transform.position = new Vector3(
+                transform.position.x,
+                hit.point.y - CollisionHandler.Height,
+                0
+                );
+            Velocity = Vector2.zero;
+            StateMachine.SetState(EntityState.LEDGE_GRABBING);
+            return true;
+        }
+        return false;
+    }
+    public bool CanClimbLedge()
+    {
+        //Only climb if the player can fit on the platform
+        bool canclimb = !CollisionHandler.Cast(
+            transform.position.Swizzle_xy() + new Vector2((CollisionHandler.Width + .05f) * FacingDirection,
+            CollisionHandler.Height + .05f));
+
+        if (canclimb)
+        {
+            StateMachine.SetState(EntityState.LEDGE_CLIMBING);
+            return true;
+        }
+        return false;
     }
 }

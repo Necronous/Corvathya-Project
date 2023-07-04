@@ -34,5 +34,11 @@ public enum EntityState
     AIR_LIGHT_ATTACK,
     AIR_HEAVY_ATTACK,
 
+    GROUND_SIDEARM_ATTACK,
+    AIR_SIDEARM_ATTACK,
+
+    GROUND_SPELL_CAST,
+    AIR_SPELL_CAST,
+
     //EnemySpecific
 }

@@ -17,7 +17,7 @@ public class GameInitializer : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(this);
 
-        Application.targetFrameRate = 60;
+        Application.targetFrameRate = -1;
 
         SaveManager.Create();
         WorldVariables.Reset();

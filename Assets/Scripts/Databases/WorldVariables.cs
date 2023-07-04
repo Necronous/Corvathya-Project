@@ -18,16 +18,15 @@ public static partial class WorldVariables
     public const int PLAYER_LAST_CHECKPOINT = 1;
     public const int PLAYER_SAVED_POSITION = 2;
     public const int PLAYER_EQUIPED_WEAPON = 3;
-    public const int PLAYER_MAX_HEALTH = 4;
-    public const int PLAYER_CURRENT_HEALTH = 5;
+    public const int PLAYER_EQUIPED_SIDEARM = 4;
+    public const int PLAYER_MAX_HEALTH = 5;
+    public const int PLAYER_CURRENT_HEALTH = 6;
 
     //100 - 200 reserved for global
     public const int CURRENT_MAP_INDEX = 100;
     public const int NEW_GAME = 101;
 
-    //200 - 250 reserved for map 1
-
-    //250 - 300 reserved for map 2 ...etc
+    //200+ for maps
 
     private static Dictionary<int, object> DefaultWorldVariables = new()
     {

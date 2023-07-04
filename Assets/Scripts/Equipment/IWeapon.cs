@@ -12,16 +12,17 @@ public interface IWeapon
     public bool GroundHeavyAttack(int combo);
     public bool AirHeavyAttack(int combo);
 
-    public GameObject GetHitObject(Vector3 point, params string[] layernames)
-        => PlayerController.Instance.CombatHandler.GetHitObject(point, layernames);
-    public GameObject GetHitObject(Rect rect, params string[] layernames)
-        => PlayerController.Instance.CombatHandler.GetHitObject(rect, layernames);
-    
-    //Breakable wall, etc...
-    public bool IsWeaponTriggered(GameObject obj)
-        =>throw new NotImplementedException();
-    public BaseEntityController IsEntity(GameObject obj) 
-        => obj.GetComponent<BaseEntityController>();
+    public GameObject[] GetHitObjects(Rect rect, Bitmask32 layermask)
+    { 
+        Collider2D[] colliders = PlayerController.Instance.CollisionHandler.OverlapArea(rect, layermask);
+        if (colliders.Length == 0)
+            return null;
+        GameObject[] gameObjects = new GameObject[colliders.Length];
+        for(int i = 0; i < colliders.Length; i++)
+            gameObjects[i] = colliders[i].gameObject;
+        return gameObjects;
+    }
+
 
     protected void EndAttack()
     {
