@@ -14,6 +14,7 @@ public class PlayerEquipmentComponent : MonoBehaviour
     {
     }
 
+
     #region Setting
     /// <summary>
     /// Sets the equiped weapon without firing any events
@@ -38,6 +39,14 @@ public class PlayerEquipmentComponent : MonoBehaviour
             return;
         }
         EquipedWeapon = weapon;
+
+        //Setting all of these to the same state seems pointless but it allows us to check
+        //What type of attack it is from statemachine.currentstate.
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.AIR_HEAVY_ATTACK, weapon, true);
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.AIR_LIGHT_ATTACK, weapon, true);
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.GROUND_HEAVY_ATTACK, weapon, true);
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.GROUND_LIGHT_ATTACK, weapon, true);
+
         WorldVariables.Set(WorldVariables.PLAYER_EQUIPED_WEAPON, WorldVariables.GetIndexForWeapon(weapon));
     }
     /// <summary>
@@ -82,20 +91,29 @@ public class PlayerEquipmentComponent : MonoBehaviour
     /// <summary>
     /// Equips the weapon.
     /// </summary>
-    /// <param name="wep">Weapon to equip</param>
-    public void EquipWeapon(IWeapon wep)
+    /// <param name="weapon">Weapon to equip</param>
+    public void EquipWeapon(IWeapon weapon)
     {
-        if (EquipedWeapon == wep)
+        if (EquipedWeapon == weapon)
             return;
-        if (wep == null)
+        if (weapon == null)
         {
             Debug.LogError("[PlayerEquipmentComponent.cs] weapon is null!");
             return;
         }
 
-        EquipedWeapon = wep;
-        WorldVariables.Set(WorldVariables.PLAYER_EQUIPED_WEAPON, WorldVariables.GetIndexForWeapon(wep));
-        OnWeaponChange.Invoke(wep);
+        EquipedWeapon = weapon;
+
+        //Setting all of these to the same state seems pointless but it allows us to check
+        //What type of attack it is from statemachine.currentstate.
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.AIR_HEAVY_ATTACK, weapon, true);
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.AIR_LIGHT_ATTACK, weapon, true);
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.GROUND_HEAVY_ATTACK, weapon, true);
+        PlayerController.Instance.StateMachine.RegisterState(EntityState.GROUND_LIGHT_ATTACK, weapon, true);
+
+
+        WorldVariables.Set(WorldVariables.PLAYER_EQUIPED_WEAPON, WorldVariables.GetIndexForWeapon(weapon));
+        OnWeaponChange.Invoke(weapon);
     }
 
     /// <summary>

@@ -1,13 +1,12 @@
 ﻿using System;
 using UnityEngine;
-using static UnityEngine.RuleTile.TilingRuleOutput;
 
 namespace PlayerStates
 {
     #region GroundStates
     public class State_Idle : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_GROUND;
+        public StateGroup StateGroup => StateGroup.GROUND;
         public string StateName => "idle";
 
         private PlayerController _player = PlayerController.Instance;
@@ -15,30 +14,34 @@ namespace PlayerStates
         public bool Update()
         {
             if (!_player.OnGround)
-            { _player.StateMachine.SetState(EntityState.FALLING); return true; }
+            { _player.StateMachine.SetState(EntityState.FALLING); return false; }
 
             if (_player.InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_DOWN)
-            { _player.StateMachine.SetState(EntityState.JUMP_TAKINGOFF); return true; }
+            { _player.StateMachine.SetState(EntityState.JUMP_TAKINGOFF); return false; }
 
             if (_player.MovementMagnitude != 0)
             { _player.StateMachine.SetState(EntityState.RUNNING); return false; }
+
             if (_player.Velocity.x != 0)
             { _player.StateMachine.SetState(EntityState.SLIDING); return false; }
+
             if (_player.InputHandler.GetVerticalMovement() < 0)
             { _player.StateMachine.SetState(EntityState.CROUCHING); return false; }
+
+            if (_player.CombatHandler.TryMeleeAttack(StateGroup))
+            { return false; }
 
             _player.Animator.Play("Idle");
 
             return true;
         }
         public void FixedUpdate()
-        {
+        { }
 
-        }
     }
     public class State_Running : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_GROUND;
+        public StateGroup StateGroup => StateGroup.GROUND;
         public string StateName => "running";
 
         private PlayerController _player = PlayerController.Instance;
@@ -53,8 +56,12 @@ namespace PlayerStates
 
             if (_player.MovementMagnitude == 0)
             { _player.StateMachine.SetState(EntityState.IDLING); return false; }
+
             if (_player.InputHandler.GetVerticalMovement() < 0)
             { _player.StateMachine.SetState(EntityState.CROUCHING); return false; }
+
+            if (_player.CombatHandler.TryMeleeAttack(StateGroup))
+            { return false; }
 
             _player.Animator.Play("Running");
 
@@ -73,10 +80,11 @@ namespace PlayerStates
             if (_player.MovementMagnitude < 0)
                 _player.FacingDirection = -1;
         }
+
     }
     public class State_Sliding : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_GROUND;
+        public StateGroup StateGroup => StateGroup.GROUND;
         public string StateName => "sliding";
 
         private PlayerController _player = PlayerController.Instance;
@@ -96,6 +104,9 @@ namespace PlayerStates
             if (_player.InputHandler.GetVerticalMovement() < 0)
             { _player.StateMachine.SetState(EntityState.CROUCHING); return false; }
 
+            if (_player.CombatHandler.TryMeleeAttack(StateGroup))
+            { return false; }
+
             //_player.Animator.Play("Skidding");
 
             return true;
@@ -104,10 +115,11 @@ namespace PlayerStates
         {
             _player.Velocity.x = Mathf.MoveTowards(_player.Velocity.x, 0, _player.Deceleration);
         }
+
     }
     public class State_Crouching : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_GROUND;
+        public StateGroup StateGroup => StateGroup.GROUND;
         public string StateName => "crouching";
 
         private PlayerController _player = PlayerController.Instance;
@@ -125,10 +137,11 @@ namespace PlayerStates
         {
             _player.Velocity.x = Mathf.MoveTowards(_player.Velocity.x, 0, _player.Deceleration * 1.3f);
         }
+
     }
     public class State_JumpTakingOff : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_GROUND;
+        public StateGroup StateGroup => StateGroup.GROUND;
         public string StateName => "jumptakeoff";
 
         private PlayerController _player = PlayerController.Instance;
@@ -147,10 +160,11 @@ namespace PlayerStates
         }
         public void FixedUpdate()
         { }
+
     }
     public class State_JumpLanding : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_GROUND;
+        public StateGroup StateGroup => StateGroup.GROUND;
         public string StateName => "jumpland";
 
         private PlayerController _player = PlayerController.Instance;
@@ -168,6 +182,7 @@ namespace PlayerStates
         }
         public void FixedUpdate()
         { }
+
     }
 
     #endregion
@@ -175,7 +190,7 @@ namespace PlayerStates
 
     public class State_Falling : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_AIR;
+        public StateGroup StateGroup => StateGroup.AIR;
         public string StateName => "falling";
 
         private PlayerController _player = PlayerController.Instance;
@@ -218,10 +233,12 @@ namespace PlayerStates
             if (_player.MovementMagnitude < 0)
                 _player.FacingDirection = -1;
         }
+        
+
     }
     public class State_Jumping : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_AIR;
+        public StateGroup StateGroup => StateGroup.AIR;
         public string StateName => "jumping";
 
         private PlayerController _player = PlayerController.Instance;
@@ -274,13 +291,16 @@ namespace PlayerStates
             if (_player.MovementMagnitude < 0)
                 _player.FacingDirection = -1;
         }
+
     }
     public class State_Jump_Apex : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_AIR;
+        public StateGroup StateGroup => StateGroup.AIR;
         public string StateName => "jumpapex";
 
         private PlayerController _player = PlayerController.Instance;
+
+        private float _airTime = .08f;
 
         public bool Update()
         {
@@ -289,7 +309,7 @@ namespace PlayerStates
 
             _player.Velocity.y = 0;
 
-            if (_player.StateMachine.CurrentStateTime >= _player.ApexAirTime)
+            if (_player.StateMachine.CurrentStateTime >= _airTime)
                 _player.StateMachine.SetState(EntityState.FALLING);
 
             if (_player.InputHandler.GetKeyState(PlayerInputHandler.ACTION_JUMP) == PlayerInputHandler.KEY_PRESSED)
@@ -321,7 +341,7 @@ namespace PlayerStates
     #region WallStates
     public class State_LedgeGrab : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_WALL;
+        public StateGroup StateGroup => StateGroup.WALL;
         public string StateName => "ledgegrab";
 
         private PlayerController _player = PlayerController.Instance;
@@ -341,17 +361,20 @@ namespace PlayerStates
         }
         public void FixedUpdate()
         { }
+
     }
     public class State_LedgeClimb : EntityStateMachine.IEntityState
     {
-        public byte StateGroup => EntityStateMachine.STATE_GROUP_WALL;
+        private float _climbTime = .4f;
+
+        public StateGroup StateGroup => StateGroup.WALL;
         public string StateName => "ledgeclimb";
 
         private PlayerController _player = PlayerController.Instance;
 
         public bool Update()
         {
-            if (_player.StateMachine.CurrentStateTime >= _player.LedgeClimbTime)
+            if (_player.StateMachine.CurrentStateTime >= _climbTime)
             {
                 _player.transform.position =
                     _player.transform.position.Swizzle_xy() + new Vector2((_player.CollisionHandler.Width + .05f) * _player.FacingDirection,

@@ -22,6 +22,7 @@ public class EntityAnimation : MonoBehaviour
             return;
         if (!HasAnimation(name))
             return;
+
         _currentAnimation = GetAnimationClip(name);
         Animator.Play(name);
     }

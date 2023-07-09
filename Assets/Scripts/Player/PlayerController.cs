@@ -12,12 +12,6 @@ public partial class PlayerController : BaseEntityController
 
     public (byte CurrentCount, byte MaxCount, bool HighJump) JumpData = (0, 2, false);
 
-    [Header("Player_Physics")]
-    public float WallHangTime = 1f;
-    public float WallRunTime = .4f;
-    public float LedgeClimbTime = .4f;
-    public float ApexAirTime = .08f;
-
     public bool PauseInput
     {
         get => InputHandler.PauseInput;

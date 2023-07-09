@@ -33,7 +33,6 @@ public class SaveManager
         Debug.Log("save directory: " + SaveDirectory);
         if(!Directory.Exists(SaveDirectory))
             Directory.CreateDirectory(SaveDirectory);
-        LoadAllSaves();
     }
 
     public SaveFile CreateNewSave()

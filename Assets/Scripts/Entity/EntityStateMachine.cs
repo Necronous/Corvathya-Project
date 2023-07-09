@@ -4,18 +4,12 @@ using UnityEngine;
 
 public class EntityStateMachine
 {
-    public const byte STATE_GROUP_GROUND = 0;
-    public const byte STATE_GROUP_AIR = 1;
-    public const byte STATE_GROUP_WATER = 2;
-    public const byte STATE_GROUP_WALL = 3;
-    public const byte STATE_GROUP_MELEE_COMBAT = 4;
-    public const byte STATE_GROUP_RANGED_COMBAT = 5;
-    public const byte STATE_GROUP_CASTING = 6;
 
     public interface IEntityState
     {
-        public byte StateGroup { get; }
+        public StateGroup StateGroup { get; }
         public string StateName { get; }
+        
 
         public bool Update();
         public void FixedUpdate();
@@ -31,8 +25,8 @@ public class EntityStateMachine
     public EntityState GetCurrentStateID() => _currentStateID;
     public EntityState GetLastStateID() => _lastStateID;
 
-    public byte GetCurrentStateGroup() => _currentState.StateGroup;
-    public byte GetStateGroup(EntityState id) => _allStates[id].StateGroup;
+    public StateGroup GetCurrentStateGroup() => _currentState.StateGroup;
+    public StateGroup GetStateGroup(EntityState id) => _allStates[id].StateGroup;
     public string GetCurrentStateName() => _currentState.StateName;
     public string GetStateName(EntityState id) => _allStates[id].StateName;
 
@@ -69,6 +63,7 @@ public class EntityStateMachine
         CurrentStateTime = 0;
         _currentStateID = stateid;
         _currentState = _allStates[stateid];
+
         return true;
     }
 

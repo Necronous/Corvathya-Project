@@ -3,127 +3,120 @@ using UnityEngine;
 
 public class PlayerCombatComponent : MonoBehaviour
 {
-    private PlayerController _player;
-    private PlayerEquipmentComponent _equipment;
-    private PlayerInputHandler _inputHandler;
+    public int _maxCombo = 4;
+    public int _currentCombo = 0;
 
-    public (int Current, int Max) Combo = (0, 1);
-    public (float Current, float Max, bool Active) CoolDown = (0, 1f, false);
-    public (float Current, bool Active) ComboWindow = (0, false);
+    //Attack cooldown happens when the max combo is reached to prevent player infinitly chaining.
+    private (bool Active, float CurrentTime, float MaxTime) _attackCooldown = (false, 0, .5f);
 
-    /*
-    public bool IsAttacking =>
-        _player.StateMachine.CurrentState == EntityState.AIR_LIGHT_ATTACK ||
-        _player.StateMachine.CurrentState == EntityState.GROUND_LIGHT_ATTACK ||
-        _player.StateMachine.CurrentState == EntityState.AIR_HEAVY_ATTACK ||
-        _player.StateMachine.CurrentState == EntityState.GROUND_HEAVY_ATTACK;
-    public bool IsAirAttack =>
-        _player.StateMachine.CurrentState == EntityState.AIR_LIGHT_ATTACK ||
-        _player.StateMachine.CurrentState == EntityState.AIR_HEAVY_ATTACK;
-    public bool IsGroundAttack =>
-        _player.StateMachine.CurrentState == EntityState.GROUND_LIGHT_ATTACK ||
-        _player.StateMachine.CurrentState == EntityState.GROUND_HEAVY_ATTACK;
-    public bool IsLightAttack =>
-        _player.StateMachine.CurrentState == EntityState.AIR_LIGHT_ATTACK ||
-        _player.StateMachine.CurrentState == EntityState.GROUND_LIGHT_ATTACK;
-    public bool IsHeavyAttack =>
-        _player.StateMachine.CurrentState == EntityState.AIR_HEAVY_ATTACK ||
-        _player.StateMachine.CurrentState == EntityState.GROUND_HEAVY_ATTACK;
-    */
+    //combowindow happens after every attack (except the last) if another attack happens in this window its a combo.
+    private (bool Active, float CurrentTime, float MaxTime) _comboWindow = (false, 0, 1f);
 
-    void Start()
+    private void Start()
+    { }
+
+    private void Update()
     {
-        _player = GetComponent<PlayerController>();
-        _equipment = GetComponent<PlayerEquipmentComponent>();
-        _inputHandler = GetComponent<PlayerInputHandler>();
-
-        /*
-        _player.StateMachine.RegisterState(EntityState.GROUND_LIGHT_ATTACK, Melee_DoGroundLightAttack);
-        _player.StateMachine.RegisterState(EntityState.GROUND_HEAVY_ATTACK, Melee_DoGroundHeavyAttack);
-        _player.StateMachine.RegisterState(EntityState.AIR_LIGHT_ATTACK, Melee_DoAirLightAttack);
-        _player.StateMachine.RegisterState(EntityState.AIR_HEAVY_ATTACK, Melee_DoAirHeavyAttack);
-        */
-    }
-
-    void Update()
-    {
-        if (CoolDown.Active)
+        if(_attackCooldown.Active)
         {
-            CoolDown.Current -= Time.deltaTime;
-            if (CoolDown.Current <= 0)
-                ResetCombat();
-        }
-
-        if (ComboWindow.Active)
-        {
-            ComboWindow.Current -= Time.deltaTime;
-            if (ComboWindow.Current <= 0)
+            _attackCooldown.CurrentTime += Time.deltaTime;
+            if(_attackCooldown.CurrentTime >= _attackCooldown.MaxTime)
             {
-                ComboWindow = (0, false);
-                Combo.Current = 0;
+                _attackCooldown.CurrentTime = 0;
+                _attackCooldown.Active = false;
+                _currentCombo = 0;
+            }    
+        }
+        if(_comboWindow.Active)
+        {
+            _comboWindow.CurrentTime += Time.deltaTime;
+            if(_comboWindow.CurrentTime >= _comboWindow.MaxTime)
+            {
+                _comboWindow.CurrentTime = 0;
+                _comboWindow.Active = false;
+                _currentCombo = 0;
             }
         }
     }
 
-    private void ResetCombat()
+    public void EndAttack()
     {
-        Combo.Current = 0;
-        CoolDown.Current = 0;
-        ComboWindow = (0, false);
+        if (PlayerController.Instance.StateMachine.GetCurrentStateGroup() != StateGroup.COMBAT)
+            return;
+
+        if (_currentCombo >= _maxCombo)
+        {
+            _attackCooldown.CurrentTime = 0;
+            _attackCooldown.Active = true;
+
+            _comboWindow.CurrentTime = 0;
+            _comboWindow.Active = false;
+            
+            _currentCombo = 0;
+            
+        }
+        else
+        {
+            _attackCooldown.CurrentTime = 0;
+            _attackCooldown.Active = false;
+
+            _comboWindow.CurrentTime = 0;
+            _comboWindow.Active = true;
+        }
+
+
+        PlayerController.Instance.StateMachine.SetState(EntityState.IDLING);
     }
 
-    #region MeleeWeapon
-    public bool Melee_TryGroundAttack()
-        => Melee_TryAttack(false);
-    public bool Melee_TryAirAttack()
-        => Melee_TryAttack(true);
-
-    private bool Melee_TryAttack(bool inair)
+    public bool TryMeleeAttack(StateGroup sgroup)
     {
-        if (CoolDown.Active)
+        PlayerInputHandler input = PlayerController.Instance.InputHandler;
+        PlayerController player = PlayerController.Instance;
+
+        bool heavy = input.KeyPressed(PlayerInputHandler.ACTION_HEAVYATTACK);
+        bool light = input.KeyPressed(PlayerInputHandler.ACTION_LIGHTATTACK);
+
+        if (!heavy && !light)
+            return false;
+        if (!(sgroup == StateGroup.GROUND || sgroup == StateGroup.AIR))
+            return false;
+        if (_attackCooldown.Active)
             return false;
 
-        EntityState lightstate = inair ? EntityState.AIR_LIGHT_ATTACK : EntityState.GROUND_LIGHT_ATTACK;
-        EntityState heavystate = inair ? EntityState.AIR_HEAVY_ATTACK : EntityState.GROUND_HEAVY_ATTACK;
 
-        bool isLightAttack = _inputHandler.KeyDown(PlayerInputHandler.ACTION_LIGHTATTACK);
+        //Temporary:: implement velocity into weapon states.
+        player.Velocity = Vector2.zero;
 
-        if (ComboWindow.Active)
+        _currentCombo++;
+        _comboWindow.Active = false;
+
+        if(sgroup == StateGroup.GROUND)
         {
-            Combo.Current++;
-            ComboWindow.Current = _equipment.EquipedWeapon.ComboWindow;
-            ComboWindow.Active = false; //Reactivate after attack.
-
-            if (Combo.Current > Combo.Max)
+            if (heavy)
             {
-                CoolDown.Current = CoolDown.Max;
-                CoolDown.Active = true;
+                player.EquipmentHandler.EquipedWeapon.PrimeForGroundHeavyAttack(_currentCombo);
+                player.StateMachine.SetState(EntityState.GROUND_HEAVY_ATTACK);
+            }
+            else
+            {
+                player.EquipmentHandler.EquipedWeapon.PrimeForGroundLightAttack(_currentCombo);
+                player.StateMachine.SetState(EntityState.GROUND_LIGHT_ATTACK);
             }
         }
-        if (isLightAttack)
-            _player.StateMachine.SetState(lightstate);
         else
-            _player.StateMachine.SetState(heavystate);
+        {
+            if (heavy)
+            {
+                player.EquipmentHandler.EquipedWeapon.PrimeForAirHeavyAttack(_currentCombo);
+                player.StateMachine.SetState(EntityState.AIR_HEAVY_ATTACK);
+            }
+            else
+            {
+                player.EquipmentHandler.EquipedWeapon.PrimeForAirLightAttack(_currentCombo);
+                player.StateMachine.SetState(EntityState.AIR_LIGHT_ATTACK);
+            }
+        }
 
         return true;
     }
-
-    private bool Melee_DoGroundLightAttack()
-        => _equipment.EquipedWeapon.GroundLightAttack(Combo.Current);
-    private bool Melee_DoGroundHeavyAttack()
-        => _equipment.EquipedWeapon.GroundHeavyAttack(Combo.Current);
-    private bool Melee_DoAirLightAttack()
-        => _equipment.EquipedWeapon.AirLightAttack(Combo.Current);
-    private bool Melee_DoAirHeavyAttack()
-        => _equipment.EquipedWeapon.AirHeavyAttack(Combo.Current);
-
-    #endregion
-    
-    #region Sidearms
-    #endregion
-
-    #region Spells
-    #endregion
-
-    
 }
